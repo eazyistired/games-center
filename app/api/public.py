@@ -1,0 +1,418 @@
+"""Player-facing API (no login)."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import func, select
+
+from .. import __version__
+from ..config import get_settings
+from ..models import Crew, Deck, Game, GameNight, GameSession, Player
+from ..services import leaderboards as lb
+from ..services.decks import deck_out, words_for_session
+from ..services.nights import current_night_date
+from ..services.registry import get_manifest, merged_settings
+from ..services.runtime import get_runtime
+from ..services.sessions import (
+    SessionError,
+    active_sessions,
+    create_session,
+    iso,
+    recent_lineups,
+    session_out,
+    submit_result,
+)
+from .deps import DB, bad_request, get_session_or_404
+
+router = APIRouter(prefix="/api", tags=["public"])
+
+
+# ---------------------------------------------------------------- meta
+
+
+@router.get("/health")
+def health(db: DB) -> dict[str, Any]:
+    db.execute(select(1))
+    return {"status": "ok", "version": __version__}
+
+
+@router.get("/config")
+def config(db: DB) -> dict[str, Any]:
+    rt = get_runtime(db)
+    return {
+        "site_name": rt["site_name"],
+        "tonight": current_night_date(db).isoformat(),
+        "min_sessions": rt["min_sessions"],
+        "admin_enabled": bool(get_settings().admin_password),
+        "version": __version__,
+    }
+
+
+# ---------------------------------------------------------------- players & crews
+
+
+def player_dict(p: Player) -> dict[str, Any]:
+    return {"id": p.id, "name": p.name, "emoji": p.emoji, "active": p.active}
+
+
+@router.get("/players")
+def list_players(db: DB, include_archived: bool = False) -> list[dict[str, Any]]:
+    q = select(Player).order_by(func.lower(Player.name))
+    if not include_archived:
+        q = q.where(Player.active)
+    return [player_dict(p) for p in db.scalars(q)]
+
+
+@router.get("/players/{player_id}/profile")
+def player_profile(db: DB, player_id: int) -> dict[str, Any]:
+    p = db.get(Player, player_id)
+    if p is None:
+        raise HTTPException(404, "Player not found")
+    rows = lb.fetch_rows(db, player_id=player_id)
+    players = {p.id: p}
+    overall = lb.aggregate(rows, players)
+    per_game = []
+    for game_id in sorted({r["game_id"] for r in rows}):
+        entry = lb.aggregate([r for r in rows if r["game_id"] == game_id], players)[0]
+        m = get_manifest(game_id) or {}
+        entry["game"] = {
+            "id": game_id,
+            "name": m.get("name", game_id),
+            "emoji": m.get("emoji", "🎲"),
+        }
+        per_game.append(entry)
+    per_game.sort(key=lambda e: -e["sessions"])
+    recent = []
+    for r in rows[:25]:
+        m = get_manifest(r["game_id"]) or {}
+        recent.append(
+            {
+                "session_id": r["session_id"],
+                "game": {
+                    "id": r["game_id"],
+                    "name": m.get("name", r["game_id"]),
+                    "emoji": m.get("emoji", "🎲"),
+                },
+                "night_id": r["night_id"],
+                "date": iso(r["finished_at"]),
+                "score": r["score"],
+                "placement": r["placement"],
+                "points": r["points"],
+            }
+        )
+    # longest win streak (chronological)
+    streak = best = 0
+    for r in reversed(rows):
+        if r["points"] is None:
+            continue
+        streak = streak + 1 if r["placement"] == 1 else 0
+        best = max(best, streak)
+    return {
+        "player": player_dict(p),
+        "overall": overall[0] if overall else None,
+        "per_game": per_game,
+        "recent": recent,
+        "nights_attended": len({r["night_id"] for r in rows}),
+        "best_win_streak": best,
+    }
+
+
+class CrewIn(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    player_ids: list[int]
+
+
+@router.get("/crews")
+def list_crews(db: DB) -> list[dict[str, Any]]:
+    return [
+        {"id": c.id, "name": c.name, "player_ids": c.player_ids}
+        for c in db.scalars(select(Crew).order_by(func.lower(Crew.name)))
+    ]
+
+
+@router.post("/crews")
+def save_crew(db: DB, body: CrewIn) -> dict[str, Any]:
+    name = body.name.strip()
+    crew = db.scalars(select(Crew).where(Crew.name == name)).first()
+    if crew is None:
+        crew = Crew(name=name, player_ids=body.player_ids)
+        db.add(crew)
+    else:
+        crew.player_ids = body.player_ids
+    db.commit()
+    return {"id": crew.id, "name": crew.name, "player_ids": crew.player_ids}
+
+
+@router.delete("/crews/{crew_id}")
+def delete_crew(db: DB, crew_id: int) -> dict[str, bool]:
+    crew = db.get(Crew, crew_id)
+    if crew:
+        db.delete(crew)
+        db.commit()
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- games
+
+
+def game_dict(db: DB, game: Game, full: bool = False) -> dict[str, Any] | None:
+    m = get_manifest(game.id)
+    if m is None:
+        return None
+    out = {
+        "id": game.id,
+        "name": m["name"],
+        "emoji": m["emoji"],
+        "description": m["description"],
+        "min_players": m["min_players"],
+        "max_players": m["max_players"],
+        "modes": m["modes"],
+        "teams": m["teams"],
+        "scoring": m["scoring"],
+        "has_decks": m["has_decks"],
+        "enabled": game.enabled,
+    }
+    if full:
+        out["settings_schema"] = m["settings"]
+        out["defaults"] = merged_settings(m, game.settings)
+        if m["has_decks"]:
+            decks = db.scalars(
+                select(Deck).where(Deck.game_id == game.id, Deck.enabled).order_by(Deck.name)
+            )
+            out["decks"] = [d for d in (deck_out(db, x) for x in decks) if d["word_count"]]
+    return out
+
+
+@router.get("/games")
+def list_games(db: DB) -> list[dict[str, Any]]:
+    games = db.scalars(select(Game).where(Game.enabled).order_by(Game.sort_order, Game.id))
+    return [g for g in (game_dict(db, x) for x in games) if g]
+
+
+@router.get("/games/{game_id}")
+def get_game(db: DB, game_id: str) -> dict[str, Any]:
+    game = db.get(Game, game_id)
+    out = game_dict(db, game, full=True) if game else None
+    if out is None:
+        raise HTTPException(404, "Game not found")
+    return out
+
+
+@router.get("/games/{game_id}/lineups")
+def game_lineups(db: DB, game_id: str) -> list[dict[str, Any]]:
+    return recent_lineups(db, game_id)
+
+
+@router.get("/games/{game_id}/ratings")
+def game_ratings(db: DB, game_id: str) -> dict[int, float]:
+    return lb.ratings(db, game_id)
+
+
+# ---------------------------------------------------------------- sessions
+
+
+class TeamIn(BaseModel):
+    name: str | None = None
+    color: str | None = None
+    player_ids: list[int]
+
+
+class SessionIn(BaseModel):
+    game_id: str
+    mode: str = "solo"
+    player_ids: list[int] = []
+    teams: list[TeamIn] | None = None
+    settings: dict[str, Any] = {}
+
+
+@router.post("/sessions")
+def start_session(db: DB, body: SessionIn) -> dict[str, Any]:
+    try:
+        s = create_session(
+            db,
+            body.game_id,
+            body.mode,
+            body.player_ids,
+            [t.model_dump() for t in body.teams] if body.teams else None,
+            body.settings,
+        )
+    except SessionError as exc:
+        raise bad_request(str(exc)) from exc
+    db.commit()
+    return session_out(s)
+
+
+@router.get("/sessions/active")
+def list_active(db: DB) -> list[dict[str, Any]]:
+    return [session_out(s) for s in active_sessions(db)]
+
+
+@router.get("/sessions/{session_id}")
+def get_session(db: DB, session_id: int) -> dict[str, Any]:
+    return session_out(get_session_or_404(db, session_id))
+
+
+class ProgressIn(BaseModel):
+    state: dict[str, Any] | None
+
+
+@router.put("/sessions/{session_id}/progress")
+def save_progress(db: DB, session_id: int, body: ProgressIn) -> dict[str, bool]:
+    s = get_session_or_404(db, session_id)
+    if s.status != "active":
+        raise bad_request(f"Session is {s.status}")
+    s.progress = body.state
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/sessions/{session_id}/words")
+def session_words(db: DB, session_id: int) -> list[dict[str, Any]]:
+    return words_for_session(db, get_session_or_404(db, session_id))
+
+
+class ScoreIn(BaseModel):
+    player_id: int | None = None
+    team: int | None = None
+    score: float | None = None
+
+
+class WordPlayIn(BaseModel):
+    word_id: int
+    result: str
+
+
+class ResultIn(BaseModel):
+    scores: list[ScoreIn]
+    details: dict[str, Any] | None = None
+    word_plays: list[WordPlayIn] | None = None
+
+
+@router.post("/sessions/{session_id}/result")
+def post_result(db: DB, session_id: int, body: ResultIn) -> dict[str, Any]:
+    s = get_session_or_404(db, session_id)
+    try:
+        submit_result(
+            db,
+            s,
+            [x.model_dump() for x in body.scores],
+            body.details,
+            [w.model_dump() for w in body.word_plays] if body.word_plays else None,
+        )
+    except SessionError as exc:
+        raise bad_request(str(exc)) from exc
+    db.commit()
+    return session_out(s)
+
+
+@router.post("/sessions/{session_id}/abandon")
+def abandon(db: DB, session_id: int) -> dict[str, Any]:
+    s = get_session_or_404(db, session_id)
+    if s.status == "active":
+        s.status = "abandoned"
+        s.finished_at = None
+        db.commit()
+    return session_out(s)
+
+
+# ---------------------------------------------------------------- leaderboards & nights
+
+
+@router.get("/leaderboards")
+def leaderboards(
+    db: DB,
+    period: str = Query("all", pattern="^(tonight|month|year|all)$"),
+    game_id: str | None = None,
+) -> dict[str, Any]:
+    rt = get_runtime(db)
+    min_sessions = 1 if period == "tonight" else rt["min_sessions"]
+    if game_id and get_manifest(game_id) is None:
+        raise HTTPException(404, "Game not found")
+    return {
+        "period": period,
+        "game_id": game_id,
+        "min_sessions": min_sessions,
+        "entries": lb.leaderboard(db, period=period, game_id=game_id, min_sessions=min_sessions),
+    }
+
+
+def night_summary(db: DB, night: GameNight) -> dict[str, Any]:
+    sessions = db.scalars(
+        select(GameSession)
+        .where(GameSession.night_id == night.id, GameSession.status == "finished")
+        .order_by(GameSession.finished_at)
+    ).all()
+    player_ids = {p.player_id for s in sessions for p in s.participants}
+    games = sorted({s.game_id for s in sessions})
+    return {
+        "id": night.id,
+        "date": night.date.isoformat(),
+        "label": night.label,
+        "session_count": len(sessions),
+        "player_count": len(player_ids),
+        "games": [
+            {
+                "id": g,
+                "name": (get_manifest(g) or {}).get("name", g),
+                "emoji": (get_manifest(g) or {}).get("emoji", "🎲"),
+            }
+            for g in games
+        ],
+    }
+
+
+@router.get("/nights")
+def list_nights(db: DB, limit: int = 60) -> list[dict[str, Any]]:
+    nights = db.scalars(
+        select(GameNight)
+        .where(
+            GameNight.id.in_(select(GameSession.night_id).where(GameSession.status == "finished"))
+        )
+        .order_by(GameNight.date.desc(), GameNight.id.desc())
+        .limit(limit)
+    )
+    out = []
+    for n in nights:
+        summary = night_summary(db, n)
+        standings = lb.leaderboard(db, night_id=n.id)
+        summary["top"] = standings[:3]
+        out.append(summary)
+    return out
+
+
+@router.get("/nights/{night_id}")
+def get_night(db: DB, night_id: int) -> dict[str, Any]:
+    night = db.get(GameNight, night_id)
+    if night is None:
+        raise HTTPException(404, "Night not found")
+    out = night_summary(db, night)
+    out["standings"] = lb.leaderboard(db, night_id=night.id)
+    sessions = db.scalars(
+        select(GameSession)
+        .where(GameSession.night_id == night.id, GameSession.status == "finished")
+        .order_by(GameSession.finished_at)
+    )
+    out["sessions"] = [session_out(s) for s in sessions]
+    return out
+
+
+@router.get("/sessions/{session_id}/summary")
+def session_summary(db: DB, session_id: int) -> dict[str, Any]:
+    s = get_session_or_404(db, session_id)
+    return {
+        "session": session_out(s),
+        "night": night_summary(db, s.night),
+        "night_standings": lb.leaderboard(db, night_id=s.night_id),
+        "night_sessions_for_game": db.scalar(
+            select(func.count())
+            .select_from(GameSession)
+            .where(
+                GameSession.night_id == s.night_id,
+                GameSession.game_id == s.game_id,
+                GameSession.status == "finished",
+            )
+        ),
+    }

@@ -1,0 +1,22 @@
+# TrueNAS SCALE: Apps -> Discover Apps -> ⋮ -> Install via YAML, paste this file.
+# Before installing:
+#   1. Create a dataset, e.g. tank/apps/games-center (Apps preset, owner apps:apps 568:568)
+#   2. Adjust the host path below + ADMIN_PASSWORD + TZ
+services:
+  games-center:
+    image: ghcr.io/eazyistired/games-center:latest
+    container_name: games-center
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+      - "8080:8080"            # host:container - change the left side if 8080 is taken
+    environment:
+      ADMIN_PASSWORD: "change-me"
+      TZ: "Europe/Bucharest"
+      NIGHT_CUTOFF_HOUR: "6"   # games before 06:00 count for the previous night
+      SITE_NAME: "Games Center"
+      BACKUP_KEEP: "14"        # automatic daily backups kept in /data/backups
+      SECURE_COOKIES: "true"   # served over HTTPS via Nginx Proxy Manager
+    volumes:
+      - /mnt/tank/apps/games-center:/data
+    user: "568:568"

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0f1a">
+  <title>Admin · Games Center</title>
+  <link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .page { padding-bottom: 48px; max-width: 960px; }
+    .tabs { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: .5rem 0; margin-bottom: .75rem; }
+    .tabs .seg { width: 100%; }
+    table.admin { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    table.admin th { text-align: left; color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; padding: .4rem; border-bottom: 1px solid var(--border); }
+    table.admin td { padding: .5rem .4rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    table.admin tr.dim td { opacity: .5; }
+    .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .5rem; }
+    .score-input { width: 90px; min-height: 38px; padding: .4rem .5rem; }
+    .word-list { max-height: 420px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <main id="app" class="page"></main>
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
