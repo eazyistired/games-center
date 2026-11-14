@@ -15,7 +15,8 @@ game; everyone's results land in shared leaderboards.
   - **Heads Up**: solo or teams, tilt or tap controls, pause, 9 built-in decks incl. IMDb Top
     250, + custom decks.
   - **Imposter**: everyone gets the secret word except the imposter; one-word clues, vote,
-    last-chance guess. Shares the Heads Up decks.
+    last-chance guess. One phone or 📱📱 everyone's phones (secret voting). Shares the Heads Up
+    decks.
   - **Three Rounds**: teams; the same pool of words is described, then clued with one word,
     then mimed. Shares the Heads Up decks.
   - **Tuned In**: teams; the clue-giver sees a hidden target between two extremes, the team

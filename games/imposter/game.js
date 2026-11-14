@@ -315,6 +315,11 @@ function finalScreen() {
 async function boot() {
   mount(root, h("div", { class: "screen centered" }, h("div", { class: "spinner" })));
   try {
+    const peek = await GC.getSession();
+    if (peek.device_mode === "multi") {
+      const { runMulti } = await import("./multi.js");
+      return runMulti();
+    }
     session = await GC.start();
   } catch (e) {
     mount(root, h("div", { class: "screen centered" }, h("h2", null, "😵 " + e.message), h("a", { class: "btn", href: "/" }, "Home")));

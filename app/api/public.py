@@ -654,10 +654,10 @@ def get_night(db: DB, night_id: int, device: DeviceId) -> dict[str, Any]:
 
 
 @router.get("/sessions/{session_id}/summary")
-def session_summary(db: DB, session_id: int) -> dict[str, Any]:
+def session_summary(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
     return {
-        "session": session_out(s),
+        "session": full_session(db, s, device),
         "night": night_summary(db, s.night),
         "night_standings": lb.leaderboard(db, night_id=s.night_id),
         "night_sessions_for_game": db.scalar(

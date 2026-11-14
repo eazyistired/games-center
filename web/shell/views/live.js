@@ -169,12 +169,15 @@ function lobbyBlock(s, redraw) {
     try { redraw(await api(`/api/sessions/${s.id}/seat/${playerId}`, { method: "DELETE" })); } catch (e) { toast(e.message, "bad"); }
   };
   const myFreeSeat = me.player && L.seats.find((x) => x.player_id === me.player.id && !x.mine);
+  // a phone that knows who it is only gets "That's me" next to its own name
+  const knownInLineup = !!(me.player && L.seats.some((x) => x.player_id === me.player.id));
   const seatRow = (x) => h("div", { class: "list-item" },
     h("span", { class: "avatar" }, x.emoji),
     h("div", { class: "grow" }, h("b", null, x.name, x.host ? " 👑" : ""),
       h("div", { class: "tiny muted" }, x.mine ? "this phone" : x.joined ? (x.online ? "joined · online" : "joined · reconnecting…") : "waiting…")),
     x.joined ? h("span", { class: `badge ${x.online || x.mine ? "good" : "warn"}` }, x.mine ? "You" : "✓") : null,
-    !x.joined && !L.my_seat ? h("button", { class: "btn small primary", onclick: () => seatAction(x.player_id) }, "That's me") : null,
+    !x.joined && !L.my_seat && (!knownInLineup || x.player_id === me.player.id)
+      ? h("button", { class: "btn small primary", onclick: () => seatAction(x.player_id) }, "That's me") : null,
     L.is_host && x.joined && !x.mine ? h("button", { class: "btn small ghost icon-btn", title: "Remove", onclick: () => remove(x.player_id) }, "✕") : null);
   const joined = L.seats.filter((x) => x.joined).length;
   return h("div", { class: "stack" },
@@ -251,7 +254,7 @@ export async function watchView({ params, query }) {
       w.headline ? h("div", { class: "watch-headline center" }, w.headline) : null,
       rows.length
         ? h("div", { class: "card tight list watch-board" }, rows.map((r, i) => h("div", { class: "list-item" },
-            h("span", { class: "watch-rank" }, ["🥇", "🥈", "🥉"][i] || i + 1),
+            h("span", { class: "watch-rank" }, ((rank) => ["🥇", "🥈", "🥉"][rank - 1] || rank)(rows.findIndex((x) => x.score === r.score) + 1)),
             r.color ? h("span", { class: "team-dot", style: { "--team": r.color } }) : h("span", { class: "watch-e" }, r.emoji),
             h("span", { class: "grow watch-name" }, r.name),
             h("span", { class: "watch-score" }, r.score ?? "–"))))
