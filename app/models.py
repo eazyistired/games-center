@@ -54,7 +54,7 @@ class GameSession(Base):
     night_id: Mapped[int] = mapped_column(ForeignKey("game_nights.id"), index=True)
     mode: Mapped[str] = mapped_column(String(10), default="solo")  # solo | teams
     settings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    # (lobby ->) active -> finished | abandoned ; finished <-> void (admin)
+    # (collecting | lobby ->) active -> finished | abandoned ; finished <-> void (admin)
     status: Mapped[str] = mapped_column(String(12), default="active", index=True)
     progress: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=None)
     details: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=None)
@@ -146,6 +146,11 @@ class Word(Base):
     deck_id: Mapped[int] = mapped_column(ForeignKey("decks.id", ondelete="CASCADE"), index=True)
     text: Mapped[str] = mapped_column(String(120))
     active: Mapped[bool] = mapped_column(default=True)
+    # who wrote it (friends' words): Heads Up won't give you your own word, Imposter won't make
+    # the author the imposter
+    author_player_id: Mapped[int | None] = mapped_column(
+        ForeignKey("players.id", ondelete="SET NULL"), default=None
+    )
 
 
 class WordPlay(Base):
@@ -210,3 +215,24 @@ class TakeoverRequest(Base):
     status: Mapped[str] = mapped_column(String(12), default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
+
+
+class SessionWord(Base):
+    """A word a player added while a session was collecting words (secret from the others)."""
+
+    __tablename__ = "session_words"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("sessions.id", ondelete="CASCADE"), index=True
+    )
+    player_id: Mapped[int | None] = mapped_column(
+        ForeignKey("players.id", ondelete="SET NULL"), default=None
+    )
+    device_id: Mapped[str] = mapped_column(String(64))
+    text: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+# sessions that are not over yet (shown under "Live now")
+LIVE_STATUSES = ("active", "lobby", "collecting")

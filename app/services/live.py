@@ -17,7 +17,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import Device, GameSession, TakeoverRequest, utcnow
+from ..models import LIVE_STATUSES, Device, GameSession, TakeoverRequest, utcnow
 from .registry import get_manifest
 
 log = logging.getLogger(__name__)
@@ -81,8 +81,8 @@ def controller_active(s: GameSession) -> bool:
 
 
 def live_status(s: GameSession) -> str:
-    if s.status == "lobby":
-        return "lobby"
+    if s.status in ("lobby", "collecting"):
+        return s.status
     if s.status != "active":
         return s.status
     return "playing" if controller_active(s) else "paused"
@@ -315,9 +315,7 @@ def close_idle_sessions(db: Session, hours: float = 2) -> dict[str, int]:
 
     cutoff = utcnow() - timedelta(hours=hours)
     finished = abandoned = 0
-    for s in db.scalars(
-        select(GameSession).where(GameSession.status.in_(["active", "lobby"]))
-    ).all():
+    for s in db.scalars(select(GameSession).where(GameSession.status.in_(LIVE_STATUSES))).all():
         last = s.controller_seen_at or s.started_at
         if last >= cutoff:
             continue

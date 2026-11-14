@@ -85,6 +85,7 @@ export function startLive() {
 
 // ---------------------------------------------------------------- status chips
 export const STATUS = {
+  collecting: { label: "Writing words", cls: "info", dot: "✍️" },
   lobby: { label: "Waiting for players", cls: "info", dot: "🟡" },
   playing: { label: "Playing", cls: "good", dot: "🟢" },
   paused: { label: "Paused", cls: "warn", dot: "⏸" },
@@ -104,6 +105,10 @@ const controllerText = (s) => {
     const host = s.controller?.player;
     return `📱📱 ${joined}/${s.participants.length} phones${host ? ` · host ${host.emoji} ${host.name}` : ""}`;
   }
+  if (s.status === "collecting") {
+    const host = s.controller?.player;
+    return s.controlled_by_me ? "you're the host" : host ? `host ${host.emoji} ${host.name}` : "collecting words";
+  }
   if (s.controlled_by_me) return "on this phone";
   const p = s.controller?.player;
   const where = p ? `on ${p.emoji} ${p.name}'s phone` : "on a phone";
@@ -122,6 +127,50 @@ export function liveCard(s) {
     h("div", { class: "row between", style: { marginTop: ".4rem" } },
       h("span", { style: { fontSize: "1.2rem", letterSpacing: "1px" } }, s.participants.map((p) => p.emoji).join("")),
       mine ? h("span", { class: "badge gold" }, "You're in this") : null));
+}
+
+// ---------------------------------------------------------------- friends write the words
+function collectBlock(s, redraw, input) {
+  const c = s.collect;
+  const left = c.per_player - c.mine.length;
+  const add = async () => {
+    const text = input.value.trim();
+    if (!text) return input.focus();
+    try {
+      const out = await api(`/api/sessions/${s.id}/words`, { method: "POST", body: { text } });
+      input.value = "";
+      redraw(out);
+      input.focus();
+    } catch (e) { toast(e.message, "bad"); }
+  };
+  input.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } };
+  const remove = async (id) => {
+    try { redraw(await api(`/api/sessions/${s.id}/words/${id}`, { method: "DELETE" })); } catch (e) { toast(e.message, "bad"); }
+  };
+  const isHostSingle = s.status === "collecting" && s.controlled_by_me;
+  return h("div", { class: "stack" },
+    h("div", { class: "card stack" },
+      h("div", { class: "row between" }, h("h3", { style: { margin: 0 } }, "✍️ Add your words"),
+        h("span", { class: "badge gold" }, `${c.mine.length}/${c.per_player}`)),
+      !c.me
+        ? h("button", { class: "btn primary block", onclick: () => chooseMe() }, "👋 First, who are you?")
+        : [
+            h("p", { class: "small muted", style: { margin: 0 } }, "Only you see your words. Pick things everyone knows: people, movies, inside jokes…"),
+            left > 0 ? h("div", { class: "row" }, input, h("button", { class: "btn primary", onclick: add }, "Add")) : h("div", { class: "small", style: { color: "#3ccf7f", fontWeight: 700 } }, "✓ All your words are in!"),
+            c.mine.length ? h("div", { class: "chips" }, c.mine.map((w) => h("span", { class: "chip sm static on" }, w.text,
+              h("button", { class: "btn small ghost", style: { minHeight: "24px", padding: "0 .3rem", marginLeft: ".2rem" }, onclick: () => remove(w.id) }, "✕")))) : null,
+          ]),
+    h("div", { class: "card tight" },
+      h("div", { class: "row between", style: { padding: "0 .25rem" } }, h("b", null, "Words so far"),
+        h("span", { class: "small muted" }, `${c.total} · need ${c.min_total}+`)),
+      h("div", { class: "list" }, c.counts.map((x) => h("div", { class: "list-item" },
+        h("span", { class: "avatar" }, x.emoji), h("span", { class: "grow" }, x.name, x.player_id === c.me ? " (you)" : ""),
+        h("span", { class: `badge ${x.count >= c.per_player ? "good" : ""}` }, x.count >= c.per_player ? `✓ ${x.count}` : `${x.count}/${c.per_player}`))))),
+    isHostSingle
+      ? h("button", { class: "btn primary xl block", disabled: !c.ready, onclick: async () => {
+          try { const out = await api(`/api/sessions/${s.id}/begin`, { method: "POST" }); location.href = out.game.url; } catch (e) { toast(e.message, "bad"); }
+        } }, c.ready ? `▶ Start with ${c.total} words` : `Need ${c.min_total - c.total} more words…`)
+      : s.status === "collecting" ? h("p", { class: "small muted center", style: { margin: 0 } }, "The host starts the game when everyone's done.") : null);
 }
 
 // ---------------------------------------------------------------- session page
@@ -187,9 +236,9 @@ function lobbyBlock(s, redraw) {
     myFreeSeat && !L.my_seat ? h("button", { class: "btn primary xl block", onclick: () => seatAction(myFreeSeat.player_id) }, `${me.player.emoji} Join as ${me.player.name}`) : null,
     !L.my_seat && !myFreeSeat ? h("p", { class: "small muted center", style: { margin: 0 } }, "Tap “That's me” next to your name to join on this phone.") : null,
     L.is_host
-      ? h("button", { class: "btn primary xl block", disabled: !L.all_joined, onclick: async () => {
+      ? h("button", { class: "btn primary xl block", disabled: !L.all_joined || (s.collect && !s.collect.ready), onclick: async () => {
           try { const out = await api(`/api/sessions/${s.id}/start`, { method: "POST" }); location.href = out.game.url; } catch (e) { toast(e.message, "bad"); }
-        } }, L.all_joined ? "▶ Start the game" : `Waiting for ${L.seats.length - joined} more…`)
+        } }, !L.all_joined ? `Waiting for ${L.seats.length - joined} more…` : s.collect && !s.collect.ready ? `Need ${s.collect.min_total - s.collect.total} more words…` : "▶ Start the game")
       : L.my_seat ? h("div", { class: "card center small" }, "✅ You're in! The host will start the game when everyone has joined.") : null,
     L.is_host ? h("p", { class: "tiny muted center", style: { margin: 0 } }, "Everyone opens the site (📲 Invite has the QR code), finds this game under Live now and taps their name.") : null);
 }
@@ -198,6 +247,8 @@ export async function sessionView({ params, app }) {
   let s = await api(`/api/sessions/${params[0]}`);
   if (s.status === "finished") { go(`/results/${s.id}`); return null; }
   const root = h("div", { class: "stack" });
+  // kept across live redraws so a half-typed word isn't lost when others add theirs
+  const wordInput = h("input", { placeholder: "A word or name…", maxlength: 120, autocomplete: "off", enterkeyhint: "done" });
 
   function draw(next) {
     if (next) s = next;
@@ -205,13 +256,14 @@ export async function sessionView({ params, app }) {
     const mine = isMine(s);
     const multi = s.device_mode === "multi";
     const blocks = [];
+    if (s.collect && (s.status === "collecting" || (multi && s.status === "lobby"))) blocks.push(collectBlock(s, draw, wordInput));
     if (multi && s.status === "lobby") blocks.push(lobbyBlock(s, draw));
     else if (multi && s.status === "active") {
       if (s.lobby.my_seat || s.lobby.is_host) blocks.push(h("a", { class: "btn primary xl block", href: s.game.url }, "▶ Open the game"));
       else if (me.player && s.lobby.seats.some((x) => x.player_id === me.player.id)) blocks.push(lobbyBlock(s, draw));
       else blocks.push(h("p", { class: "small muted center" }, "This game is already running. You can watch it live."));
     } else if (s.status === "active") blocks.push(...singleActions(s));
-    if (["active", "lobby"].includes(s.status)) {
+    if (["active", "lobby", "collecting"].includes(s.status)) {
       blocks.push(h("a", { class: "btn block", href: `#/watch/${s.id}` }, "👀 Watch live"));
       if (s.controlled_by_me || s.live_status === "paused") blocks.push(h("button", { class: "btn ghost block", onclick: () => discard(s) }, "🗑 Discard game"));
     }
@@ -224,11 +276,16 @@ export async function sessionView({ params, app }) {
       !(multi && s.status === "lobby") && (s.mode === "teams"
         ? s.teams.map((t) => h("div", { class: "card tight team-col", style: { "--team": t.color } }, h("b", null, h("span", { class: "team-dot" }), t.name), playerChips(s, t.player_ids)))
         : h("div", { class: "card tight" }, playerChips(s))),
-      !["active", "lobby"].includes(s.status) ? h("div", { class: "card muted" }, "This game is no longer running.") : null,
+      !["active", "lobby", "collecting"].includes(s.status) ? h("div", { class: "card muted" }, "This game is no longer running.") : null,
       ...blocks);
   }
   draw();
-  const sock = openSocket({ session: s.id, onMessage: (msg) => { if (msg.type === "session" && !document.querySelector(".modal-back")) draw(msg.session); } });
+  const sock = openSocket({ session: s.id, onMessage: (msg) => {
+    if (msg.type !== "session" || document.querySelector(".modal-back")) return;
+    const focused = document.activeElement === wordInput;
+    draw(msg.session);
+    if (focused) wordInput.focus();
+  } });
   onLeave(() => sock.close());
   void app;
   return root;

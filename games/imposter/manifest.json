@@ -24,7 +24,40 @@
       "type": "decks",
       "label": "Decks",
       "help": "Pick none to use every deck",
-      "default": []
+      "default": [],
+      "hide_if": "collect_words"
+    },
+    {
+      "key": "collect_words",
+      "type": "bool",
+      "label": "✍️ Friends write the words",
+      "help": "Before the game, everyone adds their own words from their phone (used instead of the decks). You can save them as a deck afterwards.",
+      "default": false
+    },
+    {
+      "key": "collect_per_player",
+      "type": "select",
+      "label": "Words per person",
+      "show_if": "collect_words",
+      "options": [
+        {
+          "value": 3,
+          "label": "3"
+        },
+        {
+          "value": 5,
+          "label": "5"
+        },
+        {
+          "value": 8,
+          "label": "8"
+        },
+        {
+          "value": 10,
+          "label": "10"
+        }
+      ],
+      "default": 5
     },
     {
       "key": "rounds",

@@ -359,7 +359,8 @@ async function boot() {
   } else {
     const all = await GC.getWords();
     const want = Math.max(8, (Number(session.settings.words_per_player) || 4) * session.participants.length);
-    st.words = all.slice(0, want); // fresh words first (the API puts words used tonight last)
+    // friends' words: use them all; otherwise fresh words first (the API puts words used tonight last)
+    st.words = session.settings.collect_words ? all : all.slice(0, want);
     st.remaining = shuffle(st.words.map((w) => w.id));
   }
   if (!st.words.length) {

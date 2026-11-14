@@ -5,22 +5,141 @@
   "description": "One pool of words, three rounds: describe it, then one word only, then mime it. Same words every round.",
   "min_players": 4,
   "max_players": 24,
-  "modes": ["teams"],
-  "teams": { "min": 2, "max": 4, "min_size": 2 },
-  "scoring": { "higher_is_better": true, "unit": "words" },
+  "modes": [
+    "teams"
+  ],
+  "teams": {
+    "min": 2,
+    "max": 4,
+    "min_size": 2
+  },
+  "scoring": {
+    "higher_is_better": true,
+    "unit": "words"
+  },
   "has_decks": true,
   "deck_source": "heads-up",
   "settings": [
-    { "key": "decks", "type": "decks", "label": "Decks", "help": "Pick none to use every deck. Charades-friendly decks make round 3 more fun.", "default": [] },
-    { "key": "words_per_player", "type": "select", "label": "Words per player", "help": "Pool size = this × number of players", "options": [
-      { "value": 3, "label": "3" }, { "value": 4, "label": "4" }, { "value": 5, "label": "5" }, { "value": 6, "label": "6" }
-    ], "default": 4 },
-    { "key": "turn_seconds", "type": "select", "label": "Turn length", "options": [
-      { "value": 30, "label": "30 s" }, { "value": 45, "label": "45 s" }, { "value": 60, "label": "60 s" }, { "value": 90, "label": "90 s" }
-    ], "default": 45 },
-    { "key": "skips", "type": "select", "label": "Skips per turn", "help": "A skipped word is thrown out for the rest of the game", "options": [
-      { "value": 0, "label": "None" }, { "value": 1, "label": "1" }, { "value": 2, "label": "2" }, { "value": 99, "label": "Unlimited" }
-    ], "default": 1 },
-    { "key": "sounds", "type": "bool", "label": "Sounds", "default": true }
+    {
+      "key": "decks",
+      "type": "decks",
+      "label": "Decks",
+      "help": "Pick none to use every deck. Charades-friendly decks make round 3 more fun.",
+      "default": [],
+      "hide_if": "collect_words"
+    },
+    {
+      "key": "collect_words",
+      "type": "bool",
+      "label": "✍️ Friends write the words",
+      "help": "Before the game, everyone adds their own words from their phone (used instead of the decks). You can save them as a deck afterwards.",
+      "default": false
+    },
+    {
+      "key": "collect_per_player",
+      "type": "select",
+      "label": "Words per person",
+      "show_if": "collect_words",
+      "options": [
+        {
+          "value": 3,
+          "label": "3"
+        },
+        {
+          "value": 5,
+          "label": "5"
+        },
+        {
+          "value": 8,
+          "label": "8"
+        },
+        {
+          "value": 10,
+          "label": "10"
+        }
+      ],
+      "default": 5
+    },
+    {
+      "key": "words_per_player",
+      "type": "select",
+      "label": "Words per player",
+      "help": "Pool size = this × number of players",
+      "options": [
+        {
+          "value": 3,
+          "label": "3"
+        },
+        {
+          "value": 4,
+          "label": "4"
+        },
+        {
+          "value": 5,
+          "label": "5"
+        },
+        {
+          "value": 6,
+          "label": "6"
+        }
+      ],
+      "default": 4,
+      "hide_if": "collect_words"
+    },
+    {
+      "key": "turn_seconds",
+      "type": "select",
+      "label": "Turn length",
+      "options": [
+        {
+          "value": 30,
+          "label": "30 s"
+        },
+        {
+          "value": 45,
+          "label": "45 s"
+        },
+        {
+          "value": 60,
+          "label": "60 s"
+        },
+        {
+          "value": 90,
+          "label": "90 s"
+        }
+      ],
+      "default": 45
+    },
+    {
+      "key": "skips",
+      "type": "select",
+      "label": "Skips per turn",
+      "help": "A skipped word is thrown out for the rest of the game",
+      "options": [
+        {
+          "value": 0,
+          "label": "None"
+        },
+        {
+          "value": 1,
+          "label": "1"
+        },
+        {
+          "value": 2,
+          "label": "2"
+        },
+        {
+          "value": 99,
+          "label": "Unlimited"
+        }
+      ],
+      "default": 1
+    },
+    {
+      "key": "sounds",
+      "type": "bool",
+      "label": "Sounds",
+      "default": true
+    }
   ]
 }

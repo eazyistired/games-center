@@ -102,14 +102,22 @@ def word_stats(db: Session, word_ids: list[int]) -> dict[int, dict[str, Any]]:
 
 def words_for_session(db: Session, session: GameSession) -> list[dict[str, Any]]:
     """Shuffled words from the session's decks. Words already used tonight go last."""
-    deck_ids = [int(d) for d in (session.settings.get("decks") or [])]
-    q = (
-        select(Word, Deck)
-        .join(Deck, Deck.id == Word.deck_id)
-        .where(Deck.game_id == deck_game(session.game_id), Deck.enabled, Word.active)
-    )
-    if deck_ids:
-        q = q.where(Deck.id.in_(deck_ids))
+    collected = session.settings.get("collected_deck")
+    if collected:  # friends wrote the words: use exactly those (the deck may still be hidden)
+        q = (
+            select(Word, Deck)
+            .join(Deck, Deck.id == Word.deck_id)
+            .where(Deck.id == int(collected), Word.active)
+        )
+    else:
+        deck_ids = [int(d) for d in (session.settings.get("decks") or [])]
+        q = (
+            select(Word, Deck)
+            .join(Deck, Deck.id == Word.deck_id)
+            .where(Deck.game_id == deck_game(session.game_id), Deck.enabled, Word.active)
+        )
+        if deck_ids:
+            q = q.where(Deck.id.in_(deck_ids))
     rows = db.execute(q).all()
     used_tonight = set(
         db.scalars(
@@ -120,7 +128,13 @@ def words_for_session(db: Session, session: GameSession) -> list[dict[str, Any]]
     )
     fresh, used = [], []
     for word, deck in rows:
-        item = {"id": word.id, "text": word.text, "deck": deck.name, "emoji": deck.emoji}
+        item = {
+            "id": word.id,
+            "text": word.text,
+            "deck": "Friends' words" if collected else deck.name,
+            "emoji": deck.emoji,
+            "author": word.author_player_id,
+        }
         (used if word.id in used_tonight else fresh).append(item)
     random.shuffle(fresh)
     random.shuffle(used)
