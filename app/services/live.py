@@ -81,6 +81,8 @@ def controller_active(s: GameSession) -> bool:
 
 
 def live_status(s: GameSession) -> str:
+    if s.status == "lobby":
+        return "lobby"
     if s.status != "active":
         return s.status
     return "playing" if controller_active(s) else "paused"
@@ -313,12 +315,14 @@ def close_idle_sessions(db: Session, hours: float = 2) -> dict[str, int]:
 
     cutoff = utcnow() - timedelta(hours=hours)
     finished = abandoned = 0
-    for s in db.scalars(select(GameSession).where(GameSession.status == "active")).all():
+    for s in db.scalars(
+        select(GameSession).where(GameSession.status.in_(["active", "lobby"]))
+    ).all():
         last = s.controller_seen_at or s.started_at
         if last >= cutoff:
             continue
         partial = s.partial_result or {}
-        if partial.get("scores"):
+        if s.status == "active" and partial.get("scores"):
             details = dict(partial.get("details") or {})
             details["summary"] = (details.get("summary") or "Scores so far") + " · auto-finished"
             details["auto_finished"] = True

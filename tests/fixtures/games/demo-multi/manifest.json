@@ -1,0 +1,11 @@
+{
+  "id": "demo-multi",
+  "name": "Demo Tap Race",
+  "emoji": "👆",
+  "description": "Test-only multi-phone game.",
+  "min_players": 2,
+  "max_players": 10,
+  "modes": ["solo"],
+  "devices": ["single", "multi"],
+  "settings": [{ "key": "target", "type": "select", "label": "Target", "options": [3, 5], "default": 3 }]
+}

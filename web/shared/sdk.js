@@ -261,10 +261,56 @@
       location.href = "/";
     },
 
-    /** After submitResult: go to the shared results screen. */
+    /** After submitResult: go to the shared results screen (safe to call more than once). */
     exit() {
+      if (live.exiting) return;
+      live.exiting = true;
       clearInterval(live.timer);
       location.href = sessionId ? `/#/results/${sessionId}` : "/";
+    },
+
+    // ------------------------------------------------------------ multi-phone games
+    /**
+     * Multi-phone: subscribe to this session. onUpdate(session) is called right away and on every
+     * change; session.view is what THIS phone may see (from the server engine), session.lobby has
+     * the seats. If this phone has no seat yet, it's sent to the lobby to join first.
+     * Returns { close() }.
+     */
+    connect(onUpdate) {
+      requireSession();
+      let ws = null;
+      let closed = false;
+      let retry = 0;
+      let ping = null;
+      const open = () => {
+        if (closed) return;
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        ws = new WebSocket(`${proto}://${location.host}/ws?session=${sessionId}&device=${DEVICE}`);
+        ws.onopen = () => { retry = 0; clearInterval(ping); ping = setInterval(() => { try { ws.send("ping"); } catch { /* ignore */ } }, 15000); };
+        ws.onmessage = (e) => {
+          const msg = JSON.parse(e.data);
+          if (msg.type !== "session") return;
+          const s = msg.session;
+          if (s.lobby && !s.lobby.my_seat && !s.lobby.is_host && s.status !== "finished") {
+            location.href = `/#/sessions/${sessionId}`; // join from the lobby first
+            return;
+          }
+          if (s.status !== "active" && s.status !== "lobby") { closed = true; ws.close(); } // game over: stop listening
+          onUpdate(s);
+        };
+        ws.onclose = () => { clearInterval(ping); if (!closed) setTimeout(open, Math.min(500 * 2 ** ++retry, 15000)); };
+      };
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && ws && ws.readyState > 1) { retry = 0; open(); }
+      });
+      open();
+      return { close() { closed = true; clearInterval(ping); ws?.close(); } };
+    },
+
+    /** Multi-phone: send an action to the server engine. Resolves with the updated session. */
+    async act(action) {
+      requireSession();
+      return call(`/api/sessions/${sessionId}/act`, "POST", action);
     },
 
     /** Keep the screen on while playing (needs HTTPS). Returns a release() function. */

@@ -60,8 +60,17 @@ player phone◄─────► │ devices: who is who, who controls, last se
    - Live now on Home, statuses on Nights, session page, Invite QR, auto-finish idle sessions
    - Build/version stamp (`/api/health`, admin dashboard)
    - All four games use it (resume at the start of the round)
-2. **Multi-phone layer**: WebSockets + reconnect, lobby, claiming, Python engine framework,
-   spectator/TV view
+2. **Multi-phone layer** ✅
+   - WebSockets on `/ws` (`?session=ID` = this phone's payload pushed on every change;
+     no session = "live" nudges for Home/Nights), auto-reconnect, ping every 15 s
+   - Start screen: 📱 One phone / 📱📱 Everyone's phones (games whose manifest lists
+     `"devices": ["single", "multi"]` and that have an engine)
+   - Lobby on the session page: seats with joined/online, "Join as Ana" / "That's me"
+     (claiming a seat also sets who the phone is), host 👑 removes people, Start when all joined;
+     a seat held by another active phone can't be taken (the host can move it)
+   - Engines (`app/engines`): `setup`, `act`, `view(viewer)`, `result`, `partial`; raw state
+     never leaves the server (`progress` is hidden for multi-phone sessions)
+   - Watch / 📺 TV mode for any live game (scoreboard + headline, live)
 3. **Imposter multi-phone**: private cards, clue order, secret voting, typed guess
 4. **Tuned In multi-phone**: private target, live needle, bets from phones, TV dial
 5. **Three Rounds multi-phone**: clue-giver's own phone, live timer/score

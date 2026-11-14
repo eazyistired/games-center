@@ -31,7 +31,8 @@ Check: `http://<NAS-IP>:8080/api/health` → `{"status":"ok"}`.
 Hosts → Proxy Hosts → Add:
 - Domain: `games.grzv.local`
 - Scheme `http`, Forward host `<NAS-IP>`, port `8080`
-- ✅ Block common exploits, ✅ Websockets support (not used yet, harmless)
+- ✅ Block common exploits, ✅ **Websockets Support** (required: live updates, lobbies and
+  multi-phone games use WebSockets on `/ws`)
 - SSL tab: your existing certificate, ✅ Force SSL, ✅ HTTP/2
 
 ## 5. Pi-hole
@@ -73,6 +74,7 @@ Admin → Dashboard shows **Running version** (the git commit, with a link) and
 |---|---|
 | App won't start, `unable to open database file` / permission denied | Dataset not writable by 568:568: fix the dataset permissions (Apps preset) |
 | Admin says "Admin disabled" | Set `ADMIN_PASSWORD` in the app's YAML and redeploy |
+| Lobby / Live now / watch screens don't update by themselves | Turn on **Websockets Support** on the NPM proxy host |
 | Tilt does nothing | Not HTTPS / cert not trusted / motion permission denied. Use **Test tilt** on the Heads Up start screen (and **Flip tilt direction** if up/down are swapped), or turn **Tilt controls** off and use taps |
 | Old UI after update | Pull to refresh; assets revalidate on every load |
 | Logs | Apps → games-center → Logs |
