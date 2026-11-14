@@ -101,6 +101,8 @@ def create_session(
             raise SessionError(f"This game needs {lim['min']}-{lim['max']} teams")
         if any(not t.get("player_ids") for t in teams):
             raise SessionError("Every team needs at least one player")
+        if any(len(t["player_ids"]) < lim["min_size"] for t in teams):
+            raise SessionError(f"Every team needs at least {lim['min_size']} players")
 
     if len(set(player_ids)) != len(player_ids):
         raise SessionError("A player can only be in the lineup once")

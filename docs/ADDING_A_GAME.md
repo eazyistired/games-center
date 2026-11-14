@@ -13,7 +13,7 @@ the lineup, settings and results. The game only plays and reports raw scores.
   "min_players": 2,
   "max_players": 12,
   "modes": ["solo", "teams"],       // the first one is the default
-  "teams": { "min": 2, "max": 4 },
+  "teams": { "min": 2, "max": 4, "min_size": 1 },   // min_size = players per team
   "scoring": { "higher_is_better": true, "unit": "points" },
   "has_decks": false,               // true -> decks/*.json + admin deck editor
   "deck_source": null,              // or e.g. "heads-up": reuse another game's decks
@@ -60,6 +60,11 @@ default (Admin → Games) → choice on the start screen → `session.settings`.
 
 `details.summary` (a string) is shown on the results screen. Anything else in `details` is stored
 for future stats.
+
+## Game kit (optional)
+`/static/gamekit.js` has the shared pieces: `createSound()`, `fit()` (shrink text to fit),
+`countdown()`, `createTimer()` (pausable), `pauseOverlay()` (Resume with 3-2-1 + extra
+actions), `onHidden()` (auto-pause when the phone locks), `goImmersive()`, `shuffle()`.
 
 ## 3. Decks (optional)
 `games/<id>/decks/<slug>.json`:
