@@ -1,12 +1,14 @@
 // Heads Up - one phone, passed around. Tilt down = correct, tilt up = pass.
-import { h, mount, toast, confirmDialog, modal } from "/static/ui.js";
+import { h, mount, toast, confirmDialog, modal, switchField } from "/static/ui.js";
 
 const GC = window.GC;
 const root = document.getElementById("game");
 
-const TILT_KEY = "gc.headsup.tiltSign";
-const TRIGGER = 6.5; // m/s² along the screen normal (~40°)
-const NEUTRAL = 3.5;
+const FLIP_KEY = "gc.headsup.flipTilt";
+// "face" = how much the screen points at the ceiling: +1 face up, 0 upright on the forehead, -1 face down
+const DOWN = -0.6; // tilt down (screen to floor) = correct
+const UP = 0.6; // tilt up (screen to ceiling) = pass
+const NEUTRAL = 0.35; // must come back to upright before the next answer
 const FEEDBACK_MS = 650;
 
 const ls = {
@@ -58,29 +60,57 @@ function unlockAudio() {
   } catch { /* no audio */ }
 }
 
-// ------------------------------------------------------------------ motion
-const motion = { z: 0, has: false, sign: Number(ls.get(TILT_KEY)) || 1, listener: null };
-function onMotion(e) {
-  const a = e.accelerationIncludingGravity;
-  if (!a || a.z === null) return;
+// ------------------------------------------------------------------ tilt
+// Primary source: deviceorientation -> face = cos(beta) * cos(gamma) (same sign on iOS & Android)
+// Fallback: devicemotion gravity z / 9.81 (iOS reports it inverted)
+const isIOS = /iP(hone|ad|od)/.test(navigator.platform) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+const motion = { face: 0, src: null, has: false, last: 0, flip: ls.get(FLIP_KEY) === "1", listener: null, listening: false };
+
+function feed(v, from) {
+  if (!Number.isFinite(v)) return;
+  if (motion.src === "ori" && from === "mot") return; // prefer orientation once it's flowing
+  motion.src = from;
   motion.has = true;
-  motion.z = motion.z * 0.6 + a.z * 0.4; // low-pass
-  motion.listener?.(motion.z * motion.sign);
+  motion.last = Date.now();
+  if (motion.flip) v = -v;
+  motion.face = motion.face * 0.5 + v * 0.5;
+  motion.listener?.(motion.face);
 }
-async function enableMotion() {
-  if (!session.settings.tilt) return false;
+function onOri(e) {
+  if (e.beta == null || e.gamma == null) return;
+  const r = Math.PI / 180;
+  feed(Math.cos(e.beta * r) * Math.cos(e.gamma * r), "ori");
+}
+function onMot(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.z == null) return;
+  feed((isIOS ? -a.z : a.z) / 9.81, "mot");
+}
+
+/** MUST be called synchronously inside a tap handler (iOS shows the permission prompt then). */
+function enableMotion() {
+  const asks = [];
   try {
-    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
-      const r = await DeviceMotionEvent.requestPermission();
-      if (r !== "granted") { toast("Motion access denied: use the tap buttons", "bad"); return false; }
+    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function")
+      asks.push(DeviceOrientationEvent.requestPermission().catch(() => "denied"));
+  } catch { /* ignore */ }
+  try {
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function")
+      asks.push(DeviceMotionEvent.requestPermission().catch(() => "denied"));
+  } catch { /* ignore */ }
+  return Promise.all(asks).then((r) => {
+    if (!motion.listening) {
+      window.addEventListener("deviceorientation", onOri, true);
+      window.addEventListener("devicemotion", onMot, true);
+      motion.listening = true;
     }
-  } catch {
-    toast("Tilt needs HTTPS: use the tap buttons", "bad");
-    return false;
-  }
-  window.removeEventListener("devicemotion", onMotion);
-  window.addEventListener("devicemotion", onMotion);
-  return true;
+    return !r.includes("denied");
+  });
+}
+
+function setFlip(v) {
+  motion.flip = v;
+  ls.set(FLIP_KEY, v ? "1" : "0");
 }
 
 let releaseWake = null;
@@ -90,6 +120,7 @@ async function goFullscreen() {
       await document.documentElement.requestFullscreen({ navigationUI: "hide" });
     }
   } catch { /* iOS: not supported */ }
+  try { await screen.orientation?.lock?.("landscape"); } catch { /* not supported */ }
   releaseWake ||= await GC.keepAwake();
 }
 
@@ -120,12 +151,14 @@ function nextWord() {
   return words[wordPos++];
 }
 
-function sizeClass(text) {
-  const longest = Math.max(...text.split(" ").map((w) => w.length));
-  if (text.length <= 9 && longest <= 9) return "xl";
-  if (text.length <= 16 && longest <= 12) return "l";
-  if (text.length <= 26) return "m";
-  return "s";
+/** Shrink the word until it fits the screen (long movie titles!). */
+function fit(el) {
+  el.style.fontSize = "";
+  let size = parseFloat(getComputedStyle(el).fontSize);
+  while ((el.scrollHeight > innerHeight * 0.62 || el.scrollWidth > innerWidth * 0.95) && size > 22) {
+    size -= 4;
+    el.style.fontSize = `${size}px`;
+  }
 }
 
 function save() {
@@ -163,11 +196,10 @@ async function menu() {
 function introScreen() {
   const resuming = st.turnIdx > 0;
   const tiltOn = session.settings.tilt;
-  const calibrated = ls.get(TILT_KEY) !== null;
   mount(root, h("div", { class: "screen" }, h("div", { class: "wrap" },
     h("div", { class: "bar" },
       h("button", { class: "back", onclick: () => (resuming ? menu() : GC.quit()) }, "‹"),
-      h("b", null, "🙆 Heads Up"),
+      h("div", { class: "logo" }, "HEADS UP"),
       h("span", { class: "badge" }, session.mode === "teams" ? "Teams" : "Solo")),
     h("div", { class: "card stack" },
       h("h2", { style: { margin: 0 } }, resuming ? `Welcome back! Turn ${st.turnIdx + 1} of ${turns.length}` : "How to play"),
@@ -175,44 +207,52 @@ function introScreen() {
         h("div", null, "📱 The guesser holds the phone on their forehead, screen facing out."),
         h("div", null, "🗣️ Everyone else gives clues (no saying the word!)."),
         tiltOn ? h("div", null, "⬇️ Tilt ", h("b", null, "down"), " = got it  ·  ⬆️ Tilt ", h("b", null, "up"), " = pass") : h("div", null, "👆 Tap right = got it · tap left = pass"),
+        h("div", null, "🔄 Landscape works best on the forehead."),
         h("div", null, `⏱️ ${session.settings.round_seconds}s per turn · ${turns.length} turns · ${words.length} words`),
         session.mode === "teams" && h("div", null, "👥 Teammates give the clues; the team gets the points."))),
-    tiltOn && h("div", { class: "card row between" },
-      h("div", null, h("b", null, "Tilt test"), h("div", { class: "small muted" }, calibrated ? "Done on this phone ✓" : "Recommended once per phone")),
-      h("button", { class: `btn small ${calibrated ? "" : "primary"}`, onclick: calibrateScreen }, calibrated ? "Redo" : "Test tilt")),
+    tiltOn && h("div", { class: "card stack" },
+      h("div", { class: "row between" },
+        h("div", null, h("b", null, "Tilt sensor"), h("div", { class: "small muted" }, "Check it once per phone")),
+        h("button", { class: "btn small", onclick: () => { const p = enableMotion(); testScreen(p); } }, "Test tilt")),
+      switchField("Flip tilt direction", motion.flip, setFlip, "Turn on if down/up are swapped on this phone")),
     standingsList(),
-    h("button", { class: "btn primary xl block", onclick: async () => {
+    h("button", { class: "btn primary xl block", onclick: () => {
+      const granted = tiltOn ? enableMotion() : Promise.resolve(true); // synchronous in the tap (iOS)
       unlockAudio();
-      await enableMotion();
-      await goFullscreen();
+      goFullscreen();
+      granted.then((ok) => { if (!ok) toast("Motion access denied: use the tap controls", "bad"); });
       handoffScreen();
     } }, resuming ? "▶ Continue" : "▶ Start"))));
 }
 
-async function calibrateScreen() {
-  unlockAudio();
-  if (!(await enableMotion())) return;
-  const status = h("div", { class: "muted" }, "Waiting for the sensor…");
+function testScreen(permission) {
+  const state = h("div", { class: "tstate" }, "…");
+  const dot = h("div", { class: "tdot" });
+  const val = h("div", { class: "tval" }, "waiting for sensor…");
+  const msg = h("p", { class: "muted", style: { maxWidth: "440px" } },
+    "Hold the phone sideways on your forehead, screen facing out. Tilt down: it should say DOWN. Tilt up: UP. If they're swapped, turn on Flip.");
+  const back = () => { motion.listener = null; introScreen(); };
   mount(root, h("div", { class: "screen centered" },
-    h("div", { class: "calib" }, "🙇"),
-    h("h2", null, "Phone on your forehead, screen out, then nod DOWN"),
-    status,
-    h("button", { class: "btn ghost", onclick: () => { motion.listener = null; introScreen(); } }, "Cancel")));
-  let neutralSeen = false;
-  setTimeout(() => { if (!motion.has) status.textContent = "No motion sensor found: tilt won't work here, use taps."; }, 2500);
-  motion.listener = (nz) => {
-    const raw = nz * motion.sign;
-    status.textContent = neutralSeen ? "Now nod down…" : "Hold it upright on your forehead…";
-    if (Math.abs(raw) < NEUTRAL) neutralSeen = true;
-    if (neutralSeen && Math.abs(raw) > TRIGGER + 1) {
-      motion.sign = raw < 0 ? 1 : -1;
-      ls.set(TILT_KEY, String(motion.sign));
-      motion.listener = null;
-      sfx.correct();
-      toast("Tilt calibrated ✓", "good");
-      introScreen();
-    }
+    state, h("div", { class: "tbar" }, dot), val, msg,
+    h("div", { style: { width: "100%", maxWidth: "320px" } }, switchField("Flip tilt direction", motion.flip, setFlip)),
+    h("button", { class: "btn", style: { minWidth: "200px" }, onclick: back }, "Back")));
+  const started = Date.now();
+  motion.listener = (face) => {
+    dot.style.left = `calc(${50 - face * 50}% - 8px)`;
+    val.textContent = `sensor: ${motion.src === "ori" ? "orientation" : "motion"} · value ${face.toFixed(2)}`;
+    if (face < DOWN) { state.textContent = "DOWN ✅"; state.style.color = "#3ccf7f"; }
+    else if (face > UP) { state.textContent = "UP ⏭️"; state.style.color = "#ef6a50"; }
+    else { state.textContent = "LEVEL"; state.style.color = ""; }
   };
+  permission.then((ok) => setTimeout(() => {
+    if (motion.last >= started || !root.contains(state)) return;
+    state.textContent = "No sensor data";
+    state.style.color = "var(--accent)";
+    val.textContent = ok ? "the browser isn't sending motion events" : "motion permission was denied";
+    msg.textContent = isIOS
+      ? "On iPhone, Safari only gives motion data to https:// pages with a trusted certificate. If you denied the prompt, close the tab and reopen it. Tap controls work meanwhile."
+      : "Check Chrome ▸ Settings ▸ Site settings ▸ Motion sensors is allowed, and that the page is opened over https://. Tap controls work meanwhile.";
+  }, 1500));
 }
 
 function handoffScreen() {
@@ -258,7 +298,7 @@ function playScreen(turn) {
   let finished = false;
   const tilt = session.settings.tilt && motion.has;
 
-  const wordEl = h("div", { class: `word ${sizeClass(current.text)}` }, current.text);
+  const wordEl = h("div", { class: "word" }, current.text);
   const deckEl = h("div", { class: "deck" }, `${current.emoji} ${current.deck}`);
   const timerEl = h("div", { class: "timer" }, seconds);
   const countEl = h("div", { class: "count" }, "0");
@@ -272,6 +312,7 @@ function playScreen(turn) {
     !tilt && h("div", { class: "tap-hint" }, h("span", null, "◀ tap: pass"), h("span", null, "tap: got it ▶")),
     h("div", { class: "progress" }, progress));
   mount(root, play);
+  fit(wordEl);
 
   function act(result) {
     if (busy || finished) return;
@@ -286,19 +327,19 @@ function playScreen(turn) {
       if (finished) return;
       play.classList.remove(result);
       current = nextWord();
-      wordEl.className = `word ${sizeClass(current.text)}`;
       wordEl.textContent = current.text;
       deckEl.textContent = `${current.emoji} ${current.deck}`;
       mount(center, wordEl);
+      fit(wordEl);
       busy = false;
     }, FEEDBACK_MS);
   }
 
-  motion.listener = (nz) => {
+  motion.listener = (face) => {
     if (!session.settings.tilt) return;
-    if (!armed) { if (Math.abs(nz) < NEUTRAL && !busy) armed = true; return; }
-    if (nz < -TRIGGER) act("correct");
-    else if (nz > TRIGGER) act("pass");
+    if (!armed) { if (Math.abs(face) < NEUTRAL && !busy) armed = true; return; }
+    if (face < DOWN) act("correct");
+    else if (face > UP) act("pass");
   };
 
   function frame() {

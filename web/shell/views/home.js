@@ -16,20 +16,20 @@ export async function homeView() {
       h("div", { style: { fontWeight: 750 } }, `${s.game.emoji} ${s.game.name} in progress`),
       h("div", { class: "small muted" }, `${s.participants.length} players · started ${ago(s.started_at)}`)),
     h("div", { class: "row" },
-      h("button", { class: "btn small ghost", style: { color: "#fff", borderColor: "rgba(255,255,255,.4)" }, onclick: async () => {
+      h("button", { class: "btn small ghost", onclick: async () => {
         if (await confirmDialog("Discard game?", "It won't count for the leaderboards.", "Discard", true)) {
           await api(`/api/sessions/${s.id}/abandon`, { method: "POST" });
           rerender();
         }
       } }, "✕"),
-      h("a", { class: "btn small", href: s.game.url, style: { background: "#fff", color: "#3a22b8", borderColor: "#fff" } }, "Resume"))));
+      h("a", { class: "btn small", href: s.game.url }, "Resume"))));
 
   const top = tonight.entries.slice().sort((a, b) => b.total_points - a.total_points).slice(0, 3);
 
   return h("div", { class: "stack lg" },
     h("div", null,
       h("div", { class: "row between" },
-        h("h1", { style: { margin: 0 } }, config.site_name),
+        h("h1", { class: "logo" }, config.site_name.toUpperCase()),
         h("a", { href: "/admin/", class: "btn small ghost", title: "Admin" }, "⚙️")),
       h("div", { class: "muted" }, `Tonight · ${fmtDate(config.tonight)}`)),
     resume.length ? h("div", { class: "stack" }, resume) : null,

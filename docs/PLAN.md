@@ -8,8 +8,9 @@
 | User management | Admin web UI (not a JSON file) |
 | Language | English |
 | Stack | Python/FastAPI, SQLite, plain HTML/JS modules, no build step |
+| Look | Warm dark palette: near-black `#14110f`, cream text, gold `#f5c518` accent (tokens in `web/shared/styles.css`) |
 | Hosting | Docker image on GHCR (GitHub Actions) → TrueNAS SCALE custom app (YAML) → Nginx Proxy Manager (HTTPS) → Pi-hole local DNS |
-| Domain | `game-ceter.grzv.local` |
+| Domain | `games.grzv.local` |
 
 ## Architecture
 ```
@@ -62,13 +63,14 @@ winner-takes-all. Changing the formula recalculates history.
 
 ### Heads Up
 - [x] Solo (score per guesser) and teams (teams alternate, members rotate, team score)
-- [x] Tilt down = correct, tilt up = pass (DeviceMotion, one-time per-phone calibration),
-      tap controls as fallback / option
+- [x] Tilt down = correct, tilt up = pass (DeviceOrientation, DeviceMotion fallback), live
+      sensor test screen + per-phone "flip tilt direction", tap controls as fallback / option
 - [x] 3-2-1 countdown, timer with last-5s ticks, sounds, vibration, wake lock, fullscreen
 - [x] Review screen to fix misread tilts; last word when time runs out is reviewable
 - [x] No repeated words within a night; progress saved after every turn (refresh-safe)
 - [x] Finish early / quit from the menu
-- [x] 8 built-in decks (730 words) + custom decks from admin
+- [x] 9 built-in decks (980 words, incl. IMDb Top 250) + custom decks from admin
+- [x] Long words/titles auto-shrink to fit the screen
 
 ## Milestones
 1. **M1 Foundation** ✅

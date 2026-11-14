@@ -2,7 +2,7 @@ import { api } from "/static/api.js";
 import { h, mount, toast, ago, seg, switchField, promptDialog, confirmDialog } from "/static/ui.js";
 import { topbar } from "./components.js";
 
-const TEAM_COLORS = ["#ff5c7a", "#3fa9ff", "#ffc23f", "#3fd68f", "#b57cff", "#ff8a3f"];
+const TEAM_COLORS = ["#d9452b", "#3d8fd6", "#f5c518", "#1fa35b", "#a26be0", "#e8892b"];
 const TEAM_NAMES = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"];
 
 const lsGet = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };

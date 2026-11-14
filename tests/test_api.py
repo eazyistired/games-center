@@ -17,7 +17,7 @@ def test_health_and_games(client):
     games = client.get("/api/games").json()
     assert [g["id"] for g in games] == ["heads-up"]
     full = client.get("/api/games/heads-up").json()
-    assert len(full["decks"]) == 8
+    assert len(full["decks"]) == 9
     assert full["defaults"]["round_seconds"] == 60
 
 

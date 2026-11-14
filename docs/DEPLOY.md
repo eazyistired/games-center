@@ -1,6 +1,6 @@
 # Deploying on TrueNAS SCALE
 
-Target: `https://game-ceter.grzv.local` → Pi-hole → Nginx Proxy Manager → TrueNAS app.
+Target: `https://games.grzv.local` → Pi-hole → Nginx Proxy Manager → TrueNAS app.
 
 ## 1. Image (GitHub Actions → GHCR)
 Every push to `main` runs the tests and publishes `ghcr.io/eazyistired/games-center:latest`
@@ -29,16 +29,16 @@ Check: `http://<NAS-IP>:8080/api/health` → `{"status":"ok"}`.
 
 ## 4. Nginx Proxy Manager
 Hosts → Proxy Hosts → Add:
-- Domain: `game-ceter.grzv.local`
+- Domain: `games.grzv.local`
 - Scheme `http`, Forward host `<NAS-IP>`, port `8080`
 - ✅ Block common exploits, ✅ Websockets support (not used yet, harmless)
 - SSL tab: your existing certificate, ✅ Force SSL, ✅ HTTP/2
 
 ## 5. Pi-hole
-Local DNS → DNS Records: `game-ceter.grzv.local` → IP of Nginx Proxy Manager.
+Local DNS → DNS Records: `games.grzv.local` → IP of Nginx Proxy Manager.
 
 ## 6. Phones
-Open `https://game-ceter.grzv.local`, then **Share → Add to Home Screen** (iOS) or
+Open `https://games.grzv.local`, then **Share → Add to Home Screen** (iOS) or
 **⋮ → Add to Home screen** (Android) for a fullscreen app icon.
 
 Two things to know:
@@ -69,6 +69,6 @@ if you want updates only when you choose.
 |---|---|
 | App won't start, `unable to open database file` / permission denied | Dataset not writable by 568:568: fix the dataset permissions (Apps preset) |
 | Admin says "Admin disabled" | Set `ADMIN_PASSWORD` in the app's YAML and redeploy |
-| Tilt does nothing | Not HTTPS / cert not trusted / motion permission denied. Redo "Tilt test" on the Heads Up start screen, or turn **Tilt controls** off and use taps |
+| Tilt does nothing | Not HTTPS / cert not trusted / motion permission denied. Use **Test tilt** on the Heads Up start screen (and **Flip tilt direction** if up/down are swapped), or turn **Tilt controls** off and use taps |
 | Old UI after update | Pull to refresh; assets revalidate on every load |
 | Logs | Apps → games-center → Logs |

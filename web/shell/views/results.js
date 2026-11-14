@@ -27,7 +27,7 @@ export async function resultsView({ params, app }) {
   let resultBlock;
   if (s.status === "active") {
     resultBlock = h("div", { class: "card banner stack" }, h("b", null, "This game is still in progress."),
-      h("a", { class: "btn", href: s.game.url, style: { background: "#fff", color: "#3a22b8" } }, "Resume"));
+      h("a", { class: "btn", href: s.game.url }, "Resume"));
   } else if (s.status !== "finished") {
     resultBlock = h("div", { class: "card" }, h("span", { class: "badge warn" }, s.status), " This game doesn't count for the leaderboards.");
   } else if (s.mode === "teams") {

@@ -14,7 +14,7 @@ from .registry import get_manifest, merged_settings
 from .runtime import get_runtime
 from .scoring import recompute_session
 
-TEAM_COLORS = ["#ff5c7a", "#3fa9ff", "#ffc23f", "#3fd68f", "#b57cff", "#ff8a3f"]
+TEAM_COLORS = ["#d9452b", "#3d8fd6", "#f5c518", "#1fa35b", "#a26be0", "#e8892b"]
 TEAM_NAMES = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"]
 
 
