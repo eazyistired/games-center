@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..engines import ActionError, Actor, Ctx, Viewer, get_engine
 from ..models import Device, GameSession, SessionParticipant, utcnow
-from . import live
+from . import collect, live
 from .decks import words_for_session
 from .sessions import session_out, submit_result
 
@@ -159,6 +159,11 @@ def start(db: Session, s: GameSession, device_id: str | None) -> None:
     engine = get_engine(s.game_id)
     if engine is None:
         raise MultiError("This game can't be played on multiple phones")
+    if collect.is_collecting(s):
+        try:
+            collect.materialize(db, s)
+        except collect.CollectError as exc:
+            raise MultiError(str(exc)) from exc
     s.progress = engine.setup(ctx_for(db, s))
     s.status = "active"
     s.state_version += 1
@@ -242,6 +247,10 @@ def session_payload(db: Session, s: GameSession, device_id: str | None, online: 
     """Everything one phone may know about a session (used by HTTP and WebSocket)."""
     out = session_out(s) | live.live_info(db, s, device_id)
     out["watch"] = watch_info(db, s)
+    if collect.is_collecting(s):
+        if s.status in ("collecting", "lobby"):
+            out["collect"] = collect.collect_info(db, s, device_id)
+        out["collected_deck"] = collect.deck_info(db, s)
     if s.device_mode == "multi":
         out["progress"] = None  # engine state is secret: phones only get their own view
         out["lobby"] = lobby_info(db, s, device_id, online)

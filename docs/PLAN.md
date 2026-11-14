@@ -128,6 +128,16 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Private cards, clue turns on the phones, discussion timer, secret voting with one runoff,
       typed guess (host judges near misses), reveal with votes; TV shows the reveal
 
+### Friends write the words
+- [x] "✍️ Friends write the words" setting (Heads Up, Imposter, Three Rounds; one phone or
+      everyone's phones), words per person 3/5/8/10
+- [x] Collecting phase: everyone adds words from their own phone (Live now → the game); only
+      your own words are ever sent to your phone, others see counts; host starts with enough words
+- [x] Fair play: Heads Up never shows you your own word; Imposter never makes the word's author
+      the imposter
+- [x] After the game: pop-up "Save the friends' words?" → a normal custom deck (shared by the
+      word games, editable in Admin → Decks)
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

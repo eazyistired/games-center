@@ -8,7 +8,16 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import Game, GameSession, Player, SessionParticipant, SessionTeam, WordPlay, utcnow
+from ..models import (
+    LIVE_STATUSES,
+    Game,
+    GameSession,
+    Player,
+    SessionParticipant,
+    SessionTeam,
+    WordPlay,
+    utcnow,
+)
 from .nights import get_or_create_night
 from .registry import get_manifest, merged_settings
 from .runtime import get_runtime
@@ -131,7 +140,11 @@ def create_session(
         night_id=get_or_create_night(db).id,
         mode=mode,
         settings=merged_settings(manifest, game.settings, settings),
-        status="lobby" if device_mode == "multi" else "active",
+        status="lobby"
+        if device_mode == "multi"
+        else "collecting"
+        if (settings or {}).get("collect_words")
+        else "active",
         device_mode=device_mode,
         controller_device_id=device_id,
         controller_seen_at=utcnow() if device_id else None,
@@ -261,7 +274,7 @@ def active_sessions(db: Session, hours: int = 24) -> list[GameSession]:
     return list(
         db.scalars(
             select(GameSession)
-            .where(GameSession.status.in_(["active", "lobby"]), GameSession.started_at >= since)
+            .where(GameSession.status.in_(LIVE_STATUSES), GameSession.started_at >= since)
             .order_by(GameSession.started_at.desc())
         )
     )

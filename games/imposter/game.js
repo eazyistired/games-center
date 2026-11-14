@@ -45,9 +45,11 @@ function nextWord() {
   return words[wordPos++];
 }
 
-function pickImposters() {
-  // avoid giving the role to the same person twice in a row when possible
-  const pool = players.map((p) => p.player_id);
+function pickImposters(author = null) {
+  // avoid giving the role to the same person twice in a row when possible,
+  // and never to the person who wrote the word (friends' words)
+  let pool = players.map((p) => p.player_id);
+  if (author != null && pool.filter((id) => id !== author).length >= nImp) pool = pool.filter((id) => id !== author);
   const fresh = shuffle(pool.filter((id) => !st.lastImposters.includes(id)));
   const rest = shuffle(pool.filter((id) => st.lastImposters.includes(id)));
   return [...fresh, ...rest].slice(0, nImp);
@@ -57,9 +59,10 @@ function newRound() {
   const order = players.map((p) => p.player_id);
   // rotate who looks first each round
   const shift = st.round % order.length;
+  const word = nextWord();
   round = {
-    word: nextWord(),
-    imposters: pickImposters(),
+    word,
+    imposters: pickImposters(word.author),
     order: [...order.slice(shift), ...order.slice(0, shift)],
     starter: order[Math.floor(Math.random() * order.length)],
   };

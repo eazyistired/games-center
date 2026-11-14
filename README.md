@@ -3,6 +3,8 @@
 A small self-hosted party-games hub for game nights with friends. One phone runs the
 game; everyone's results land in shared leaderboards.
 
+- **Friends write the words:** before a word game, everyone adds their own words from their
+  phone; save them as a deck afterwards.
 - **Live sessions:** running games show up under "Live now"; any phone can take a game over
   (the phone that has it, or another phone using the same name, is asked first).
 - **Shared lineups:** pick who's playing from a pool of people, reload the last lineup (or a

@@ -63,6 +63,12 @@ default (Admin → Games) → choice on the start screen → `session.settings`.
 `details.summary` (a string) is shown on the results screen. Anything else in `details` is stored
 for future stats.
 
+## Friends' words (optional, deck games)
+Add the `collect_words` / `collect_per_player` settings (see `games/heads-up/manifest.json`;
+`show_if` / `hide_if` on a setting show/hide it based on a bool setting). The session then starts
+in a collecting phase; afterwards `GC.getWords()` returns only the friends' words, each with
+`author` (player id), so the game can avoid giving players their own words.
+
 ## Game kit (optional)
 `/static/gamekit.js` has the shared pieces: `createSound()`, `fit()` (shrink text to fit),
 `countdown()`, `createTimer()` (pausable), `pauseOverlay()` (Resume with 3-2-1 + extra

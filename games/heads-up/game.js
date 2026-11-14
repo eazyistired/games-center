@@ -143,10 +143,15 @@ function buildTurns() {
   return out;
 }
 
-function nextWord() {
+/** Next word; never one the guesser wrote themselves (friends' words). */
+function nextWord(guesser = null) {
   if (wordPos >= words.length) { // ran out: reuse, shuffled
     words = words.slice().sort(() => Math.random() - 0.5);
     wordPos = 0;
+  }
+  if (guesser != null && words[wordPos].author === guesser) {
+    const j = words.findIndex((w, i) => i > wordPos && w.author !== guesser);
+    if (j > 0) [words[wordPos], words[j]] = [words[j], words[wordPos]];
   }
   return words[wordPos++];
 }
@@ -297,7 +302,7 @@ function playScreen(turn) {
   let paused = false;
   let remaining = 0;
   const shown = []; // [{word, result}]
-  let current = nextWord();
+  let current = nextWord(turn.player_id);
   let busy = false;
   let armed = false;
   let lastTick = null;
@@ -378,7 +383,7 @@ function playScreen(turn) {
     setTimeout(() => {
       if (finished) return;
       play.classList.remove(result);
-      current = nextWord();
+      current = nextWord(turn.player_id);
       wordEl.textContent = current.text;
       deckEl.textContent = `${current.emoji} ${current.deck}`;
       mount(center, wordEl);
