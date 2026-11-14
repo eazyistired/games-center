@@ -9,8 +9,11 @@ game; everyone's results land in shared leaderboards.
   recaps, player profiles.
 - **Admin dashboard:** players, sessions (edit scores, void, delete), nights, games, word
   decks, scoring settings, backups, audit log.
-- **Games:** drop a folder into `games/`. First game: **Heads Up** (solo or teams, tilt or
-  tap controls, 9 built-in decks incl. IMDb Top 250, + custom decks).
+- **Games:** drop a folder into `games/`.
+  - **Heads Up**: solo or teams, tilt or tap controls, pause, 9 built-in decks incl. IMDb Top
+    250, + custom decks.
+  - **Imposter**: everyone gets the secret word except the imposter; one-word clues, vote,
+    last-chance guess. Shares the Heads Up decks.
 
 Stack: Python 3.12 · FastAPI · SQLite (Alembic migrations) · plain HTML/JS (no build step).
 

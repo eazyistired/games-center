@@ -75,6 +75,17 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] 9 built-in decks (980 words, incl. IMDb Top 250) + custom decks from admin
 - [x] Long words/titles auto-shrink to fit the screen
 
+### Imposter
+- [x] Pass the phone; press-and-hold card reveals the secret word (or "You're the IMPOSTER")
+- [x] 1 or 2 imposters (capped so the crew is always the majority), optional category hint for
+      the imposter, imposter role rotates (no repeats in a row)
+- [x] Clue lap with a random starting player, optional discussion timer (2/3/5 min)
+- [x] Group vote → reveal → caught imposter gets a last guess at the word
+- [x] Points: +2 imposter escapes · +1 caught imposter who guesses the word · +1 each crew
+      member per caught imposter who misses
+- [x] Uses the Heads Up decks (incl. custom ones), no word repeats within a night; menu:
+      new word (redo round), finish now, quit
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

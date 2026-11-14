@@ -16,6 +16,7 @@ the lineup, settings and results. The game only plays and reports raw scores.
   "teams": { "min": 2, "max": 4 },
   "scoring": { "higher_is_better": true, "unit": "points" },
   "has_decks": false,               // true -> decks/*.json + admin deck editor
+  "deck_source": null,              // or e.g. "heads-up": reuse another game's decks
   "entry": "index.html",
   "settings": [
     { "key": "rounds", "type": "select", "label": "Rounds", "default": 3,
