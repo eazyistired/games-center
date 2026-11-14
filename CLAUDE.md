@@ -12,3 +12,4 @@ Self-hosted party games hub. FastAPI + SQLite backend (`app/`), no-build vanilla
 - Branches: only `main` and `dev` are long-lived. Work on a feature branch off `dev`, merge it
   into `dev` (`--no-ff`), delete it; `dev` → `main` when the user asks.
 - Live sessions: see `docs/LIVE_SESSIONS.md` (games boot with `GC.start()`).
+- Home server setup (TrueNAS, NPM, Pi-hole, GHCR, conventions): `docs/HOME_SERVER.md`.
