@@ -14,6 +14,8 @@ game; everyone's results land in shared leaderboards.
     250, + custom decks.
   - **Imposter**: everyone gets the secret word except the imposter; one-word clues, vote,
     last-chance guess. Shares the Heads Up decks.
+  - **Three Rounds**: teams; the same pool of words is described, then clued with one word,
+    then mimed. Shares the Heads Up decks.
 
 Stack: Python 3.12 · FastAPI · SQLite (Alembic migrations) · plain HTML/JS (no build step).
 

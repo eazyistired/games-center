@@ -15,7 +15,7 @@ def start(client, player_ids, mode="solo", teams=None, settings=None):
 def test_health_and_games(client):
     assert client.get("/api/health").json()["status"] == "ok"
     games = client.get("/api/games").json()
-    assert [g["id"] for g in games] == ["heads-up", "imposter"]
+    assert [g["id"] for g in games] == ["heads-up", "imposter", "three-rounds"]
     full = client.get("/api/games/heads-up").json()
     assert len(full["decks"]) == 9
     assert full["defaults"]["round_seconds"] == 60
@@ -229,3 +229,23 @@ def test_imposter_uses_heads_up_decks(admin, players):
     r = c.post("/api/admin/decks", json={"game_id": "imposter", "name": "Xyz", "words": "q"})
     assert r.json()["game_id"] == "heads-up"
     assert any(d["name"] == "Xyz" for d in c.get("/api/games/imposter").json()["decks"])
+
+
+def test_three_rounds_team_rules(admin, players):
+    c = admin
+    body = {"game_id": "three-rounds", "mode": "teams"}
+    r = c.post(
+        "/api/sessions",
+        json=body | {"teams": [{"player_ids": players[:1]}, {"player_ids": players[1:4]}]},
+    )
+    assert r.status_code == 400 and "at least 2 players" in r.json()["detail"]
+    r = c.post("/api/sessions", json=body | {"mode": "solo", "player_ids": players[:4]})
+    assert r.status_code == 400
+    r = c.post(
+        "/api/sessions",
+        json=body | {"teams": [{"player_ids": players[:2]}, {"player_ids": players[2:4]}]},
+    )
+    assert r.status_code == 200
+    s = r.json()
+    assert s["settings"]["skips"] == 1 and len(c.get(f"/api/sessions/{s['id']}/words").json()) > 900
+    assert c.get("/api/games/three-rounds").json()["teams"]["min_size"] == 2

@@ -86,6 +86,18 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Uses the Heads Up decks (incl. custom ones), no word repeats within a night; menu:
       new word (redo round), finish now, quit
 
+### Three Rounds
+- [x] Teams only (2–4 teams, min. 2 players per team); the clue-giver holds the phone
+- [x] One pool of words (words per player × players), reused in all three rounds:
+      🗣️ Describe → ☝️ One word → 🤐 Mime
+- [x] Teams alternate, clue-giver rotates within the team; Got it / Skip buttons, timer, pause
+      with End turn now
+- [x] Skips per turn (0/1/2/unlimited); a skipped word is thrown out for the rest of the game;
+      the word on screen when time runs out goes back in the hat
+- [x] Leftover time carries over into the next round when the hat empties mid-turn
+- [x] Review after every turn (fix mistakes); per-round scores; best clue-giver
+- [x] Score = words guessed by the team over all three rounds; uses the Heads Up decks
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

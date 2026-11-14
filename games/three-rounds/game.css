@@ -1,0 +1,57 @@
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+#game { height: 100dvh; display: flex; flex-direction: column; }
+
+.screen { flex: 1; display: flex; flex-direction: column; padding: calc(14px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; }
+.screen.centered { align-items: center; justify-content: center; text-align: center; gap: 1rem; }
+.wrap { max-width: 600px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
+.bar { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.bar.abs { position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 16px; right: 16px; }
+.logo { font-weight: 900; font-size: 2rem; letter-spacing: -.04em; line-height: 1; }
+
+.round-chip { display: inline-flex; gap: .4rem; align-items: center; padding: .3rem .8rem; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 800; }
+.rules { display: grid; gap: .5rem; }
+.rule { display: flex; gap: .75rem; align-items: center; padding: .7rem .8rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
+.rule .n { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; background: var(--surface-2); flex: none; }
+.rule.now { border-color: var(--accent); background: var(--accent-tint); }
+.rule.now .n { background: var(--accent); color: var(--on-accent); }
+.rule.done { opacity: .5; }
+.rule b { display: block; }
+
+.big-round { font-size: clamp(3rem, 16vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -.03em; }
+.round-emoji { font-size: clamp(4rem, 20vw, 7rem); line-height: 1; }
+.hand-emoji { font-size: clamp(3.5rem, 18vmin, 7rem); line-height: 1; }
+.hand-name { font-size: clamp(2rem, 9vmin, 3.2rem); font-weight: 800; letter-spacing: -.02em; }
+.team-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .9rem; border-radius: 999px; font-weight: 800; color: #000; }
+
+/* playing: the clue-giver holds the phone */
+.play { position: relative; flex: 1; display: flex; flex-direction: column; padding: calc(10px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom)); background: var(--bg); transition: background .15s; }
+.play.correct { background: var(--good); }
+.play.skip { background: var(--bad); }
+.play.timeup { background: var(--surface-2); }
+.play .top { display: flex; justify-content: space-between; align-items: center; font-weight: 900; font-size: min(7vw, 2rem); font-variant-numeric: tabular-nums; }
+.play .top .rule-hint { font-size: .9rem; font-weight: 700; color: var(--muted); text-align: center; }
+.play .timer.low { color: var(--accent); animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: .4; } }
+.play .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: .5rem; }
+.play .word { font-weight: 900; line-height: 1.05; letter-spacing: -.02em; font-size: min(14vw, 22vh); max-width: 92vw; word-break: break-word; }
+.play .deck { color: var(--muted); font-weight: 650; }
+.play .feedback { font-size: min(14vw, 20vh); font-weight: 900; }
+.play .controls { display: grid; grid-template-columns: 1fr auto 2fr; gap: .6rem; align-items: center; }
+.play .controls .btn { min-height: 72px; font-size: 1.25rem; }
+.play .progress { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-top: .5rem; }
+.play .progress > div { height: 100%; background: var(--accent); }
+
+.review-item { display: flex; align-items: center; gap: .75rem; padding: .6rem .5rem; border-bottom: 1px solid var(--border); cursor: pointer; }
+.review-item:last-child { border-bottom: 0; }
+.review-item .t { flex: 1; font-weight: 650; font-size: 1.1rem; }
+.review-item .tag { font-size: .72rem; font-weight: 700; color: var(--muted); }
+.review-item .mark { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 1.3rem; font-weight: 900; }
+.review-item.correct .mark { background: rgba(31,163,91,.22); color: #3ccf7f; }
+.review-item.miss .mark { background: rgba(217,69,43,.18); color: #ef6a50; }
+.review-item.miss .t { color: var(--muted); }
+
+.list-item .score { font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.rounds-mini { display: flex; gap: .35rem; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pool-meter { font-weight: 700; color: var(--muted); }
+.card.list, .card .list-item { text-align: left; }
