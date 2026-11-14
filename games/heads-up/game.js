@@ -332,12 +332,32 @@ function playScreen(turn) {
         h("button", { class: "btn xl", onclick: () => endTurn("Turn ended") }, "⏹ End turn now"))));
   }
   function resume() {
-    if (!paused) return;
-    play.querySelector(".pause-overlay")?.remove();
-    paused = false;
-    endAt = Date.now() + remaining;
-    lastTick = null;
-    requestAnimationFrame(frame);
+    const overlay = play.querySelector(".pause-overlay");
+    if (!paused || !overlay || overlay.dataset.resuming) return;
+    // 3-2-1 with the word still hidden, so the guesser can get the phone back on the forehead
+    overlay.dataset.resuming = "1";
+    let n = 3;
+    const num = h("div", { class: "countdown" }, n);
+    mount(overlay, h("div", { class: "muted", style: { fontSize: "1.2rem" } }, "Phone back on your forehead!"), num);
+    sfx.count();
+    const iv = setInterval(() => {
+      if (finished) return clearInterval(iv);
+      n--;
+      if (n > 0) {
+        num.textContent = n;
+        num.style.animation = "none"; void num.offsetWidth; num.style.animation = "";
+        sfx.count();
+        return;
+      }
+      clearInterval(iv);
+      overlay.remove();
+      sfx.go();
+      paused = false;
+      armed = false; // tilt must pass through upright before the next answer
+      endAt = Date.now() + remaining;
+      lastTick = null;
+      requestAnimationFrame(frame);
+    }, 900);
   }
   const onHidden = () => { if (document.visibilityState === "hidden") pause(); };
   document.addEventListener("visibilitychange", onHidden);

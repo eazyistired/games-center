@@ -70,7 +70,8 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] No repeated words within a night; progress saved after every turn (refresh-safe)
 - [x] Finish early / quit from the menu
 - [x] ⏸ Pause during a turn (word hidden, timer frozen; auto-pause when the phone locks) with
-      **End turn now** → that player's review, game continues
+      **End turn now** → that player's review, game continues; Resume runs a 3-2-1 countdown
+      with the word still hidden
 - [x] 9 built-in decks (980 words, incl. IMDb Top 250) + custom decks from admin
 - [x] Long words/titles auto-shrink to fit the screen
 
