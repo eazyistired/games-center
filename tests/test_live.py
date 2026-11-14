@@ -104,20 +104,27 @@ def test_quiet_controller_is_taken_over_at_once(admin, players):
     assert c.get(f"/api/sessions/{sid}/takeover", headers=C).json()["status"] == "granted"
 
 
-def test_same_player_on_another_active_phone_must_confirm(admin, players):
+def test_takeover_needs_other_phone_of_same_name_to_confirm(admin, players):
+    """Two phones as the same name can only exist via an approved name move; the takeover rule
+    for 'your name is active elsewhere' still holds for legacy duplicates."""
+    from app.db import SessionLocal
+    from app.models import Device
+
     c = admin
     sid = new_session(c, players)["id"]
     age_controller(sid)  # session paused: no controller approval needed
-    for h in (B, C):
-        c.put("/api/devices/me", json={"player_id": players[1]}, headers=h)
-    c.post("/api/devices/heartbeat", json={}, headers=B)  # B = "Bogdan", active somewhere
-    r = c.post(f"/api/sessions/{sid}/control", headers=C)  # C also claims to be Bogdan
-    assert r.status_code == 409
+    c.put("/api/devices/me", json={"player_id": players[1]}, headers=B)
+    c.post("/api/devices/heartbeat", json={}, headers=C)
+    with SessionLocal() as db:  # simulate a duplicate created before names were unique
+        db.get(Device, C["X-Device-Id"]).player_id = players[1]
+        db.commit()
+    c.post("/api/devices/heartbeat", json={}, headers=B)
+    assert c.post(f"/api/sessions/{sid}/control", headers=C).status_code == 409
     r = c.post(f"/api/sessions/{sid}/takeover", headers=C).json()
     assert r["status"] == "pending" and r["waiting_for"][0]["reason"] == "identity"
     req = c.post("/api/devices/heartbeat", json={}, headers=B).json()["requests"]
-    assert req[0]["reason"] == "identity" and req[0]["requester"]["id"] == players[1]
-    c.post(f"/api/takeover/{req[0]['id']}/decide", json={"approve": True}, headers=B)
+    rid = next(x["id"] for x in req if x["reason"] == "identity")
+    c.post(f"/api/takeover/{rid}/decide", json={"approve": True}, headers=B)
     assert c.get(f"/api/sessions/{sid}/takeover", headers=C).json()["status"] == "granted"
 
 

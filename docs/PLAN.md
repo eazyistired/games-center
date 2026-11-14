@@ -144,6 +144,12 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] `/setup` page (plain HTTP): per-device steps (iPhone / Android / computer), install button
       (`/ca.crt`), fingerprint, "Open the games"
 
+### One phone per name + host role
+- [x] Names: owner phone must allow a move (30 min hold, setting), 3 denials → 5 min cooldown,
+      📱 "in use" marker, seats move with the name, admin "Release from phone"
+- [x] Host: hand over 👑 (lobby + Imposter host menu), "Become host" with approval, automatic
+      hand-over when the host leaves a lobby
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

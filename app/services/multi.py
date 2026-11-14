@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..engines import ActionError, Actor, Ctx, Viewer, get_engine
 from ..models import Device, GameSession, SessionParticipant, utcnow
-from . import collect, live
+from . import collect, identity, live
 from .decks import words_for_session
 from .sessions import session_out, submit_result
 
@@ -128,13 +128,21 @@ def claim_seat(
             409,
             {"seat_taken": True},
         )
+    dev = live.touch_device(db, device_id)
+    if dev.player_id != player_id:
+        # claiming a seat = "this phone is me": one phone per name
+        owner = identity.active_holder(db, player_id, exclude=device_id)
+        if owner is not None:
+            raise MultiError(
+                f"{seat.player.name} is used on another phone",
+                409,
+                {"name_taken": True, "player_id": player_id},
+            )
+        identity.move_name(db, player_id, dev)
     for other in s.participants:  # one seat per phone
-        if other.device_id == device_id:
+        if other.device_id == device_id and other.player_id != player_id:
             other.device_id, other.joined_at = None, None
     seat.device_id, seat.joined_at = device_id, utcnow()
-    dev = live.touch_device(db, device_id)
-    if dev is not None:
-        dev.player_id = player_id  # claiming a seat = "this phone is me"
     db.flush()
 
 
@@ -144,8 +152,52 @@ def leave_seat(db: Session, s: GameSession, device_id: str | None, player_id: in
         raise MultiError("That player isn't in this game", 404)
     if seat.device_id != device_id and not is_host(s, device_id):
         raise MultiError("Only the host can remove someone else", 403)
+    was_host = bool(seat.device_id) and seat.device_id == s.controller_device_id
     seat.device_id, seat.joined_at = None, None
+    if was_host:
+        _next_host(s, set())
     db.flush()
+
+
+def _next_host(s: GameSession, online: set[str]) -> bool:
+    """Give the 👑 to the next joined player (online ones first). Returns True if it moved."""
+    joined = [p for p in s.participants if p.device_id and p.device_id != s.controller_device_id]
+    joined.sort(key=lambda p: p.device_id not in online)
+    if not joined:
+        return False
+    s.controller_device_id = joined[0].device_id
+    s.controller_seen_at = utcnow()
+    return True
+
+
+def transfer_host(db: Session, s: GameSession, device_id: str | None, player_id: int) -> None:
+    """The host hands the 👑 to another joined player (no accept step)."""
+    if s.device_mode != "multi" or s.status not in ("lobby", "active"):
+        raise MultiError("This game has no host to hand over")
+    if not is_host(s, device_id):
+        raise MultiError("Only the host can hand over the host role", 403)
+    seat = next((p for p in s.participants if p.player_id == player_id), None)
+    if seat is None or not seat.device_id:
+        raise MultiError("That player hasn't joined on a phone")
+    if seat.device_id == device_id:
+        return
+    s.controller_device_id = seat.device_id
+    s.controller_seen_at = utcnow()
+    db.flush()
+
+
+def reassign_if_host_gone(db: Session, s: GameSession, online: set[str]) -> bool:
+    """Lobby whose host phone left (offline and quiet): the next joined player becomes host."""
+    if s.device_mode != "multi" or s.status != "lobby" or not s.controller_device_id:
+        return False
+    if s.controller_device_id in online:
+        return False
+    host = db.get(Device, s.controller_device_id)
+    if host is not None and live.is_fresh(host.last_seen):
+        return False
+    moved = _next_host(s, online)
+    db.flush()
+    return moved
 
 
 def start(db: Session, s: GameSession, device_id: str | None) -> None:
@@ -247,6 +299,7 @@ def session_payload(db: Session, s: GameSession, device_id: str | None, online: 
     """Everything one phone may know about a session (used by HTTP and WebSocket)."""
     out = session_out(s) | live.live_info(db, s, device_id)
     out["watch"] = watch_info(db, s)
+    out["requests"] = live.pending_for(db, device_id)  # approvals this phone owes (host / name)
     if collect.is_collecting(s):
         if s.status in ("collecting", "lobby"):
             out["collect"] = collect.collect_info(db, s, device_id)

@@ -2,7 +2,7 @@ import { api } from "/static/api.js";
 import { h, mount, seg, fmtNum, fmtDate, medal, empty, ago } from "/static/ui.js";
 import { store, go } from "../app.js";
 import { topbar, boardTable, podium } from "./components.js";
-import { me, chooseMe, liveCard, statusChip } from "./live.js";
+import { me, chooseMe, claimName, liveCard, statusChip } from "./live.js";
 
 const PERIODS = [
   { value: "tonight", label: "Tonight" }, { value: "month", label: "Month" },
@@ -105,10 +105,7 @@ export async function playerView({ params }) {
       !d.player.active && h("span", { class: "badge" }, "archived"),
       me.player?.id === d.player.id
         ? h("button", { class: "me-chip", onclick: () => chooseMe() }, "📱 This phone is you ✓")
-        : d.player.active && h("button", { class: "me-chip", onclick: async () => {
-            await api("/api/devices/me", { method: "PUT", body: { player_id: d.player.id } });
-            location.reload();
-          } }, "📱 This is me")),
+        : d.player.active && h("button", { class: "me-chip", onclick: () => claimName(d.player.id) }, "📱 This is me")),
     o ? h("div", { class: "stat-grid" },
       stat(o.sessions, "Games"), stat(o.wins, "Wins"), stat(o.win_rate == null ? "–" : `${o.win_rate}%`, "Win rate"),
       stat(fmtNum(o.avg_points), "Avg points"), stat(o.podiums, "Podiums"), stat(d.nights_attended, "Nights"),

@@ -27,6 +27,7 @@ def _defaults() -> dict[str, Any]:
         "scoring_formula": "placement",
         "min_sessions": 3,
         "quiet_seconds": 30,
+        "name_hold_minutes": 30,  # a phone keeps its name this long after its last use
         "app_url": "",  # e.g. https://games.grzv.local (used after installing the certificate)
         "setup_url": "",  # plain-HTTP address of this app, e.g. http://192.168.1.10:8080
         "idle_hours": s.idle_hours,
@@ -64,6 +65,10 @@ def validate(updates: dict[str, Any]) -> dict[str, Any]:
             value = int(value)
             if not 10 <= value <= 600:
                 raise ValueError("'Quiet after' must be between 10 and 600 seconds")
+        elif key == "name_hold_minutes":
+            value = int(value)
+            if not 1 <= value <= 24 * 60:
+                raise ValueError("Name hold time must be between 1 minute and 24 hours")
         elif key == "idle_hours":
             value = float(value)
             if not 0.25 <= value <= 48:

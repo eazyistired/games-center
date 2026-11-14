@@ -11,6 +11,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import select
 
 from . import __version__
 from .api import admin, public
@@ -79,6 +80,35 @@ def close_idle(settings: Settings) -> None:
         log.info("idle sessions closed: %s", result)
 
 
+def watch_hosts() -> None:
+    """Lobbies whose host phone left get the next joined player as host."""
+    from .models import GameSession
+    from .services.multi import reassign_if_host_gone
+
+    moved = []
+    with SessionLocal() as db:
+        lobbies = db.scalars(
+            select(GameSession).where(
+                GameSession.status == "lobby", GameSession.device_mode == "multi"
+            )
+        ).all()
+        for s in lobbies:
+            if reassign_if_host_gone(db, s, hub.online_devices(s.id)):
+                moved.append(s.id)
+        db.commit()
+    for sid in moved:
+        hub.notify(sid)
+
+
+async def host_watch_loop() -> None:
+    while True:
+        await asyncio.sleep(10)
+        try:
+            await asyncio.to_thread(watch_hosts)
+        except Exception:  # pragma: no cover
+            log.exception("host watch failed")
+
+
 async def housekeeping_loop(settings: Settings) -> None:
     """Every 10 minutes: auto-finish/abandon sessions nobody controlled for SESSION_IDLE_HOURS."""
     while True:
@@ -111,7 +141,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         startup(settings)
         hub.loop = asyncio.get_running_loop()
         hub.build_session_payload = build_payload
-        tasks = [asyncio.create_task(housekeeping_loop(settings))]
+        tasks = [
+            asyncio.create_task(housekeeping_loop(settings)),
+            asyncio.create_task(host_watch_loop()),
+        ]
         if settings.auto_backup:
             tasks.append(asyncio.create_task(backup_loop(settings)))
         yield

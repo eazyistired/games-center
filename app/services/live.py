@@ -118,7 +118,7 @@ def require_control(s: GameSession, device_id: str | None) -> None:
 
 def claim_control(db: Session, s: GameSession, device_id: str | None) -> None:
     """Free (no controller / controller quiet) or already mine -> mine. Otherwise conflict."""
-    if s.status != "active":
+    if s.status not in ("active", "lobby"):  # lobby: "become host" before the game starts
         raise LiveError(f"Session is {s.status}", status=400)
     if not device_id:
         raise LiveError("Missing device id", status=400)
@@ -145,7 +145,7 @@ def _grant(db: Session, s: GameSession, device_id: str) -> None:
 
 
 def heartbeat(db: Session, s: GameSession, device_id: str | None) -> dict[str, Any]:
-    in_control = bool(device_id) and s.controller_device_id == device_id and s.status == "active"
+    in_control = bool(device_id) and s.controller_device_id == device_id and s.status in ("active", "lobby")
     if in_control:
         s.controller_seen_at = utcnow()
     db.flush()
@@ -169,7 +169,7 @@ def _identity_approvers(db: Session, s: GameSession, device_id: str) -> list[str
 
 
 def request_takeover(db: Session, s: GameSession, device_id: str | None) -> dict[str, Any]:
-    if s.status != "active":
+    if s.status not in ("active", "lobby"):  # lobby: "become host" before the game starts
         raise LiveError(f"Session is {s.status}", status=400)
     if not device_id:
         raise LiveError("Missing device id", status=400)
@@ -218,7 +218,7 @@ def request_takeover(db: Session, s: GameSession, device_id: str | None) -> dict
 
 def takeover_status(db: Session, s: GameSession, device_id: str | None) -> dict[str, Any]:
     """Evaluate the requester's pending requests; grant when everyone allowed (or went quiet)."""
-    if s.controller_device_id == device_id and s.status == "active":
+    if s.controller_device_id == device_id and s.status in ("active", "lobby"):
         return {"status": "granted"}
     reqs = db.scalars(
         select(TakeoverRequest).where(
@@ -264,10 +264,12 @@ def cancel_takeover(db: Session, s: GameSession, device_id: str | None) -> None:
 
 
 def pending_for(db: Session, device_id: str | None) -> list[dict[str, Any]]:
-    """Takeover requests this device has to answer."""
+    """Requests this device has to answer: takeovers (incl. host role) and names."""
     if not device_id:
         return []
-    out = []
+    from .identity import pending_for as name_requests
+
+    out = name_requests(db, device_id)
     for r in db.scalars(
         select(TakeoverRequest).where(
             TakeoverRequest.approver_device_id == device_id,
@@ -276,7 +278,7 @@ def pending_for(db: Session, device_id: str | None) -> list[dict[str, Any]]:
     ):
         s = db.get(GameSession, r.session_id)
         requester = db.get(Device, r.requester_device_id)
-        if s is None or s.status != "active" or requester is None:
+        if s is None or s.status not in ("active", "lobby") or requester is None:
             r.status = "cancelled"
             continue
         if requester.last_seen < utcnow() - timedelta(seconds=2 * ACTIVE_SECONDS):
@@ -289,6 +291,8 @@ def pending_for(db: Session, device_id: str | None) -> list[dict[str, Any]]:
                 "session_id": s.id,
                 "game": {"name": m.get("name", s.game_id), "emoji": m.get("emoji", "🎲")},
                 "requester": player_brief(requester),
+                "host": s.device_mode == "multi",
+                "decide_url": f"/api/takeover/{r.id}/decide",
             }
         )
     db.flush()
