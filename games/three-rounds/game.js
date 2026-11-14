@@ -34,7 +34,13 @@ const wordById = (id) => st.words.find((w) => w.id === id);
 const pName = (id) => byId.get(id)?.name || "?";
 const pEmoji = (id) => byId.get(id)?.emoji || "🙂";
 const teamOf = (idx) => teams.find((t) => t.idx === idx);
-const save = () => GC.saveProgress({ ...st }).catch(() => toast("Couldn't save progress (offline?)", "bad"));
+const save = () => {
+  const partial = st.log.length ? {
+    scores: teams.map((t) => ({ team: t.idx, score: st.scores[t.idx] || 0 })),
+    details: { summary: `${st.log.length} turns played (round ${Math.min(st.round + 1, 3)})`, per_round: st.perRound },
+  } : null;
+  return GC.saveProgress({ ...st }, partial).catch(() => toast("Couldn't save progress (offline?)", "bad"));
+};
 
 function currentTurn() {
   if (st.carry) return { team: st.carry.team, player_id: st.carry.player_id, ms: st.carry.ms, carried: true };
@@ -339,7 +345,7 @@ function finalScreen() {
 async function boot() {
   mount(root, h("div", { class: "screen centered" }, h("div", { class: "spinner" })));
   try {
-    session = await GC.getSession();
+    session = await GC.start();
   } catch (e) {
     mount(root, h("div", { class: "screen centered" }, h("h2", null, "😵 " + e.message), h("a", { class: "btn", href: "/" }, "Home")));
     return;

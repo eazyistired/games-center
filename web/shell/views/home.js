@@ -1,38 +1,40 @@
 import { api } from "/static/api.js";
-import { h, fmtDate, ago, empty, confirmDialog } from "/static/ui.js";
-import { store, go, rerender } from "../app.js";
+import { h, fmtDate, empty } from "/static/ui.js";
+import { store, go } from "../app.js";
 import { who } from "./components.js";
+import { me, chooseMe, liveCard } from "./live.js";
 
 export async function homeView() {
-  const [config, games, active, tonight] = await Promise.all([
+  const [config, games, live, tonight] = await Promise.all([
     store.config(),
     store.games(),
-    api("/api/sessions/active"),
+    api("/api/sessions/live"),
     api("/api/leaderboards?period=tonight"),
   ]);
 
-  const resume = active.map((s) => h("div", { class: "card banner row between" },
-    h("div", null,
-      h("div", { style: { fontWeight: 750 } }, `${s.game.emoji} ${s.game.name} in progress`),
-      h("div", { class: "small muted" }, `${s.participants.length} players · started ${ago(s.started_at)}`)),
-    h("div", { class: "row" },
-      h("button", { class: "btn small ghost", onclick: async () => {
-        if (await confirmDialog("Discard game?", "It won't count for the leaderboards.", "Discard", true)) {
-          await api(`/api/sessions/${s.id}/abandon`, { method: "POST" });
-          rerender();
-        }
-      } }, "✕"),
-      h("a", { class: "btn small", href: s.game.url }, "Resume"))));
+  const meChip = h("button", { class: "me-chip", onclick: () => chooseMe() },
+    me.player ? `${me.player.emoji} ${me.player.name}` : "👋 Who are you?");
 
+  // games you're in first
+  const mineFirst = live.slice().sort((a, b) => {
+    const m = (s) => (me.player && s.participants.some((p) => p.player_id === me.player.id) ? 0 : 1);
+    return m(a) - m(b);
+  });
   const top = tonight.entries.slice().sort((a, b) => b.total_points - a.total_points).slice(0, 3);
 
   return h("div", { class: "stack lg" },
     h("div", null,
       h("div", { class: "row between" },
-        h("h1", { class: "logo" }, config.site_name.toUpperCase()),
-        h("a", { href: "/admin/", class: "btn small ghost", title: "Admin" }, "⚙️")),
-      h("div", { class: "muted" }, `Tonight · ${fmtDate(config.tonight)}`)),
-    resume.length ? h("div", { class: "stack" }, resume) : null,
+        h("h1", { class: "logo" }, config.site_name),
+        h("div", { class: "row" },
+          h("a", { href: "#/invite", class: "btn small ghost", title: "Invite (QR code)" }, "📲"),
+          h("a", { href: "/admin/", class: "btn small ghost", title: "Admin" }, "⚙️"))),
+      h("div", { class: "row between", style: { marginTop: ".35rem" } },
+        h("div", { class: "muted" }, `Tonight · ${fmtDate(config.tonight)}`),
+        meChip)),
+    live.length ? h("div", null,
+      h("div", { class: "section-title" }, h("h2", null, h("span", { class: "live-dot" }), "Live now")),
+      h("div", { class: "stack" }, mineFirst.map(liveCard))) : null,
     h("div", null,
       h("div", { class: "section-title" }, h("h2", null, "Games")),
       games.length

@@ -59,6 +59,10 @@ Database migrations run automatically at startup.
 Pin a version instead of `latest` by using a tag (e.g. `ghcr.io/eazyistired/games-center:1.0.0`)
 if you want updates only when you choose.
 
+## Which version is running?
+Admin → Dashboard shows **Running version** (the git commit, with a link) and
+`https://games.grzv.local/api/health` returns it too. Compare it with the latest commit on `main`.
+
 ## 8. Backups
 - The app writes a SQLite backup to `/data/backups` every 24h (14 kept) and on demand
   (Admin → Backup). Admin → Backup also has a full JSON export/import.

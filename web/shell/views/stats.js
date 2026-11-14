@@ -2,6 +2,7 @@ import { api } from "/static/api.js";
 import { h, mount, seg, fmtNum, fmtDate, medal, empty, ago } from "/static/ui.js";
 import { store, go } from "../app.js";
 import { topbar, boardTable, podium } from "./components.js";
+import { me, chooseMe, liveCard, statusChip } from "./live.js";
 
 const PERIODS = [
   { value: "tonight", label: "Tonight" }, { value: "month", label: "Month" },
@@ -47,7 +48,7 @@ export async function nightsView() {
           n.label && h("div", { class: "small muted" }, fmtDate(n.date, { year: "numeric" }))),
         h("div", { style: { fontSize: "1.4rem" } }, n.games.map((g) => g.emoji).join(""))),
       h("div", { class: "row between", style: { marginTop: ".5rem" } },
-        h("div", { class: "small muted" }, `${n.session_count} games · ${n.player_count} players`),
+        h("div", { class: "small muted" }, `${n.session_count} games · ${n.player_count} players`, n.live_count ? " · " : "", n.live_count ? h("b", { style: { color: "#3ccf7f" } }, `${n.live_count} live`) : null),
         h("div", { class: "row" }, n.top.map((e, i) => h("span", { title: e.player.name }, medal(i + 1), e.player.emoji))))))
       : empty("🌙", "No game nights yet. Go play something!"));
 }
@@ -60,15 +61,19 @@ export async function nightView({ params }) {
     h("div", { class: "muted small" }, `${fmtDate(n.date, { year: "numeric" })} · ${n.session_count} games · ${n.player_count} players`),
     podium(standings.map((e) => ({ emoji: e.player.emoji, name: e.player.name, sub: `${fmtNum(e.total_points)} pts` }))),
     standings.length ? h("div", { class: "card tight" }, boardTable(n.standings, { variant: "night" })) : null,
+    n.sessions.some((s) => s.status === "active") ? h("div", null,
+      h("div", { class: "section-title" }, h("h2", null, h("span", { class: "live-dot" }), "Live now")),
+      h("div", { class: "stack" }, n.sessions.filter((s) => s.status === "active").map(liveCard))) : null,
     h("div", { class: "section-title" }, h("h2", null, "Games played")),
-    h("div", { class: "card tight list" }, n.sessions.map((s) => {
+    !n.sessions.some((s) => s.status === "finished") ? h("p", { class: "muted small" }, "No finished games yet.") : null,
+    h("div", { class: "card tight list" }, n.sessions.filter((s) => s.status === "finished").map((s) => {
       const winners = s.mode === "teams"
         ? s.teams.filter((t) => t.placement === 1).map((t) => `${t.name} (${t.player_ids.map((id) => s.participants.find((p) => p.player_id === id)?.emoji).join("")})`)
         : s.participants.filter((p) => p.placement === 1).map((p) => `${p.emoji} ${p.name}`);
       return h("div", { class: "list-item click", onclick: () => go(`/results/${s.id}`) },
         h("span", { class: "avatar" }, s.game.emoji),
         h("div", { class: "grow" }, h("b", null, s.game.name), h("div", { class: "small muted" }, `🏆 ${winners.join(", ") || "–"}`)),
-        h("span", { class: "small muted" }, new Date(s.finished_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })));
+        h("div", { class: "right" }, statusChip(s.status), h("div", { class: "tiny muted" }, new Date(s.finished_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }))));
     })));
 }
 
@@ -97,7 +102,13 @@ export async function playerView({ params }) {
     topbar("", true),
     h("div", { class: "center stack", style: { alignItems: "center", gap: ".4rem" } },
       h("div", { class: "avatar lg" }, d.player.emoji), h("h1", { style: { margin: 0 } }, d.player.name),
-      !d.player.active && h("span", { class: "badge" }, "archived")),
+      !d.player.active && h("span", { class: "badge" }, "archived"),
+      me.player?.id === d.player.id
+        ? h("button", { class: "me-chip", onclick: () => chooseMe() }, "📱 This phone is you ✓")
+        : d.player.active && h("button", { class: "me-chip", onclick: async () => {
+            await api("/api/devices/me", { method: "PUT", body: { player_id: d.player.id } });
+            location.reload();
+          } }, "📱 This is me")),
     o ? h("div", { class: "stat-grid" },
       stat(o.sessions, "Games"), stat(o.wins, "Wins"), stat(o.win_rate == null ? "–" : `${o.win_rate}%`, "Win rate"),
       stat(fmtNum(o.avg_points), "Avg points"), stat(o.podiums, "Podiums"), stat(d.nights_attended, "Nights"),

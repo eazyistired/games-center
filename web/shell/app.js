@@ -4,6 +4,7 @@ import { homeView } from "./views/home.js";
 import { playView } from "./views/play.js";
 import { resultsView } from "./views/results.js";
 import { boardsView, nightsView, nightView, playersView, playerView } from "./views/stats.js";
+import { sessionView, inviteView, startLive } from "./views/live.js";
 
 const app = document.getElementById("app");
 
@@ -19,6 +20,8 @@ const routes = [
   [/^\/?$/, homeView, "home"],
   [/^\/play\/([\w-]+)$/, playView, "home"],
   [/^\/results\/(\d+)$/, resultsView, "home"],
+  [/^\/sessions\/(\d+)$/, sessionView, "nights"],
+  [/^\/invite$/, inviteView, "home"],
   [/^\/boards$/, boardsView, "boards"],
   [/^\/nights$/, nightsView, "nights"],
   [/^\/nights\/(\d+)$/, nightView, "nights"],
@@ -66,3 +69,4 @@ window.addEventListener("hashchange", render);
 window.addEventListener("unhandledrejection", (e) => toast(e.reason?.message || "Error", "bad"));
 store.config().then((c) => { document.title = c.site_name; }).catch(() => {});
 render();
+startLive();

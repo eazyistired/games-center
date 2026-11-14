@@ -14,7 +14,7 @@ services:
       ADMIN_PASSWORD: "change-me"
       TZ: "Europe/Bucharest"
       NIGHT_CUTOFF_HOUR: "6"   # games before 06:00 count for the previous night
-      SITE_NAME: "Games Center"
+      SITE_NAME: "grzv's games"
       BACKUP_KEEP: "14"        # automatic daily backups kept in /data/backups
       SECURE_COOKIES: "true"   # served over HTTPS via Nginx Proxy Manager
     volumes:
