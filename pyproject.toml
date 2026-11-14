@@ -16,4 +16,4 @@ extend-exclude = ["app/migrations/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
-ignore = ["B008"]
+ignore = ["B008", "E501"]  # line length is handled by ruff format

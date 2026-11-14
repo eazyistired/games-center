@@ -117,6 +117,13 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Idle sessions (2 h) auto-finish with the scores so far, or are abandoned
 - [x] Build version in Admin and /api/health
 
+### Multi-phone layer (phase 2 of [LIVE_SESSIONS.md](LIVE_SESSIONS.md))
+- [x] WebSockets with auto-reconnect; Home / Nights / session pages update live
+- [x] One phone / Everyone's phones choice on the start screen (for games that support it)
+- [x] Lobby: seats, join as yourself, host controls, start when everyone has joined
+- [x] Server-side game engines (secrets never reach the wrong phone)
+- [x] Watch live + 📺 TV mode for any running game
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

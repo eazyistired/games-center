@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo Tap Race</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="page" id="game"></main>
+  <script src="/static/sdk.js"></script>
+  <script type="module">
+    import { h, mount, toast } from "/static/ui.js";
+    const root = document.getElementById("game");
+    GC.connect((s) => {
+      if (s.status === "finished") return GC.exit();
+      const v = s.view || {};
+      mount(root, h("div", { class: "stack" },
+        h("h1", null, "👆 Tap race"),
+        h("div", { class: "card", id: "secret" }, "Your secret: ", h("b", null, v.my_secret || "–")),
+        h("div", { class: "muted", id: "headline" }, v.headline || ""),
+        h("div", { class: "card tight list", id: "board" }, (v.scoreboard || []).map((r) =>
+          h("div", { class: "list-item" }, h("span", null, r.emoji), h("b", { class: "grow" }, r.name), h("span", { class: "score" }, r.score)))),
+        h("button", { class: "btn primary xl block", id: "tap", onclick: () => GC.act({ type: "tap" }).catch((e) => toast(e.message, "bad")) }, "TAP"),
+        v.is_host ? h("button", { class: "btn block", id: "reset", onclick: () => GC.act({ type: "reset" }) }, "Host: reset") : null));
+    });
+  </script>
+</body>
+</html>

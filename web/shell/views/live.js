@@ -1,7 +1,8 @@
 // Live sessions in the shell: identity, heartbeat + takeover approvals, session page, invite QR.
 import { api } from "/static/api.js";
 import { h, mount, toast, modal, ago, fmtDate, empty } from "/static/ui.js";
-import { go, rerender } from "../app.js";
+import { go, rerender, refresh, onLeave, parseHash } from "../app.js";
+import { openSocket } from "/static/socket.js";
 import { topbar } from "./components.js";
 
 const ls = {
@@ -70,12 +71,21 @@ export function startLive() {
   beat().then(() => {
     if (!me.player && !ls.get("gc.meAsked")) chooseMe({ firstTime: true }).catch(() => {});
   });
+  // the "live" room: a nudge whenever any session changes -> refresh screens that list sessions
+  let pending = null;
+  openSocket({ onMessage: () => {
+    const { path } = parseHash();
+    if (!/^\/?$|^\/nights/.test(path)) return;
+    clearTimeout(pending);
+    pending = setTimeout(refresh, 300); // coalesce bursts
+  } });
   setInterval(beat, 10000);
   document.addEventListener("visibilitychange", beat);
 }
 
 // ---------------------------------------------------------------- status chips
 export const STATUS = {
+  lobby: { label: "Waiting for players", cls: "info", dot: "🟡" },
   playing: { label: "Playing", cls: "good", dot: "🟢" },
   paused: { label: "Paused", cls: "warn", dot: "⏸" },
   finished: { label: "Finished", cls: "", dot: "✅" },
@@ -89,6 +99,11 @@ export const statusChip = (st) => {
 
 const isMine = (s) => me.player && s.participants.some((p) => p.player_id === me.player.id);
 const controllerText = (s) => {
+  if (s.device_mode === "multi") {
+    const joined = s.lobby ? s.lobby.seats.filter((x) => x.joined).length : 0;
+    const host = s.controller?.player;
+    return `📱📱 ${joined}/${s.participants.length} phones${host ? ` · host ${host.emoji} ${host.name}` : ""}`;
+  }
   if (s.controlled_by_me) return "on this phone";
   const p = s.controller?.player;
   const where = p ? `on ${p.emoji} ${p.name}'s phone` : "on a phone";
@@ -110,43 +125,143 @@ export function liveCard(s) {
 }
 
 // ---------------------------------------------------------------- session page
-export async function sessionView({ params }) {
-  const s = await api(`/api/sessions/${params[0]}`);
-  if (s.status === "finished") { go(`/results/${s.id}`); return null; }
-  const mine = isMine(s);
+function playerChips(s, filterIds = null) {
+  const parts = filterIds ? filterIds.map((id) => s.participants.find((p) => p.player_id === id)) : s.participants;
+  return h("div", { class: "chips", style: { marginTop: ".4rem" } }, parts.filter(Boolean).map((p) =>
+    h("span", { class: `chip sm static ${me.player?.id === p.player_id ? "on" : ""}` }, h("span", { class: "e" }, p.emoji), p.name)));
+}
+
+async function discard(s) {
+  const ok = await modal("Discard this game?", h("p", { class: "muted" }, "It won't count for the leaderboards."), [
+    { label: "Keep it", class: "ghost", value: false }, { label: "Discard", class: "danger", value: true }]);
+  if (!ok) return;
+  try { await api(`/api/sessions/${s.id}/abandon`, { method: "POST" }); go("/"); } catch (e) { toast(e.message, "bad"); }
+}
+
+function singleActions(s) {
   const actions = [];
-  if (s.status === "active") {
-    if (s.controlled_by_me) actions.push(h("a", { class: "btn primary xl block", href: s.game.url }, "▶ Back to the game"));
-    else {
-      actions.push(h("a", { class: "btn primary xl block", href: s.game.url }, "📱 Take over on this phone"));
-      actions.push(h("p", { class: "small muted center", style: { margin: 0 } },
-        s.live_status === "playing"
-          ? "The phone that has it now will be asked to allow it. The game continues from the start of the round."
-          : "That phone has gone quiet, so you can continue right away from the start of the round."));
-    }
-    if (s.controlled_by_me || s.live_status === "paused") {
-      actions.push(h("button", { class: "btn ghost block", onclick: async () => {
-        const ok = await modal("Discard this game?", h("p", { class: "muted" }, "It won't count for the leaderboards."), [
-          { label: "Keep it", class: "ghost", value: false }, { label: "Discard", class: "danger", value: true }]);
-        if (!ok) return;
-        try { await api(`/api/sessions/${s.id}/abandon`, { method: "POST" }); go("/"); } catch (e) { toast(e.message, "bad"); }
-      } }, "🗑 Discard game"));
-    }
+  if (s.controlled_by_me) actions.push(h("a", { class: "btn primary xl block", href: s.game.url }, "▶ Back to the game"));
+  else {
+    actions.push(h("a", { class: "btn primary xl block", href: s.game.url }, "📱 Take over on this phone"));
+    actions.push(h("p", { class: "small muted center", style: { margin: 0 } },
+      s.live_status === "playing"
+        ? "The phone that has it now will be asked to allow it. The game continues from the start of the round."
+        : "That phone has gone quiet, so you can continue right away from the start of the round."));
   }
+  return actions;
+}
+
+function lobbyBlock(s, redraw) {
+  const L = s.lobby;
+  const seatAction = async (playerId, force = false) => {
+    try {
+      const out = await api(`/api/sessions/${s.id}/seat`, { method: "POST", body: { player_id: playerId, force } });
+      redraw(out);
+    } catch (e) {
+      if (e.info?.seat_taken && L.is_host) {
+        const ok = await modal("Seat in use", h("p", { class: "muted" }, `${e.message}. Move them to this phone anyway?`), [
+          { label: "Cancel", class: "ghost", value: false }, { label: "Move", class: "danger", value: true }]);
+        if (ok) return seatAction(playerId, true);
+      } else toast(e.message, "bad");
+    }
+  };
+  const remove = async (playerId) => {
+    try { redraw(await api(`/api/sessions/${s.id}/seat/${playerId}`, { method: "DELETE" })); } catch (e) { toast(e.message, "bad"); }
+  };
+  const myFreeSeat = me.player && L.seats.find((x) => x.player_id === me.player.id && !x.mine);
+  const seatRow = (x) => h("div", { class: "list-item" },
+    h("span", { class: "avatar" }, x.emoji),
+    h("div", { class: "grow" }, h("b", null, x.name, x.host ? " 👑" : ""),
+      h("div", { class: "tiny muted" }, x.mine ? "this phone" : x.joined ? (x.online ? "joined · online" : "joined · reconnecting…") : "waiting…")),
+    x.joined ? h("span", { class: `badge ${x.online || x.mine ? "good" : "warn"}` }, x.mine ? "You" : "✓") : null,
+    !x.joined && !L.my_seat ? h("button", { class: "btn small primary", onclick: () => seatAction(x.player_id) }, "That's me") : null,
+    L.is_host && x.joined && !x.mine ? h("button", { class: "btn small ghost icon-btn", title: "Remove", onclick: () => remove(x.player_id) }, "✕") : null);
+  const joined = L.seats.filter((x) => x.joined).length;
   return h("div", { class: "stack" },
-    topbar(`${s.game.emoji} ${s.game.name}`, true),
-    h("div", { class: "card stack" },
-      h("div", { class: "row between" }, statusChip(s.live_status), h("span", { class: "small muted" }, `${s.mode === "teams" ? "Teams" : "Solo"} · ${fmtDate(s.night.date)}`)),
-      h("div", { class: "small muted" }, `Started ${ago(s.started_at)} · ${controllerText(s)}`),
-      mine && h("div", { class: "badge gold", style: { alignSelf: "flex-start" } }, `${me.player.emoji} You're in this game`)),
-    s.mode === "teams"
-      ? s.teams.map((t) => h("div", { class: "card tight team-col", style: { "--team": t.color } },
-          h("b", null, h("span", { class: "team-dot" }), t.name),
-          h("div", { class: "chips", style: { marginTop: ".4rem" } }, t.player_ids.map((id) => s.participants.find((p) => p.player_id === id))
-            .map((p) => h("span", { class: `chip sm static ${me.player?.id === p.player_id ? "on" : ""}` }, h("span", { class: "e" }, p.emoji), p.name)))))
-      : h("div", { class: "card tight chips" }, s.participants.map((p) => h("span", { class: `chip sm static ${me.player?.id === p.player_id ? "on" : ""}` }, h("span", { class: "e" }, p.emoji), p.name))),
-    s.status !== "active" ? h("div", { class: "card muted" }, "This game is no longer running.") : null,
-    ...actions);
+    h("div", { class: "card tight" },
+      h("div", { class: "row between", style: { padding: "0 .25rem" } }, h("b", null, "Players"), h("span", { class: "small muted" }, `${joined}/${L.seats.length} joined`)),
+      h("div", { class: "list" }, L.seats.map(seatRow))),
+    myFreeSeat && !L.my_seat ? h("button", { class: "btn primary xl block", onclick: () => seatAction(myFreeSeat.player_id) }, `${me.player.emoji} Join as ${me.player.name}`) : null,
+    !L.my_seat && !myFreeSeat ? h("p", { class: "small muted center", style: { margin: 0 } }, "Tap “That's me” next to your name to join on this phone.") : null,
+    L.is_host
+      ? h("button", { class: "btn primary xl block", disabled: !L.all_joined, onclick: async () => {
+          try { const out = await api(`/api/sessions/${s.id}/start`, { method: "POST" }); location.href = out.game.url; } catch (e) { toast(e.message, "bad"); }
+        } }, L.all_joined ? "▶ Start the game" : `Waiting for ${L.seats.length - joined} more…`)
+      : L.my_seat ? h("div", { class: "card center small" }, "✅ You're in! The host will start the game when everyone has joined.") : null,
+    L.is_host ? h("p", { class: "tiny muted center", style: { margin: 0 } }, "Everyone opens the site (📲 Invite has the QR code), finds this game under Live now and taps their name.") : null);
+}
+
+export async function sessionView({ params, app }) {
+  let s = await api(`/api/sessions/${params[0]}`);
+  if (s.status === "finished") { go(`/results/${s.id}`); return null; }
+  const root = h("div", { class: "stack" });
+
+  function draw(next) {
+    if (next) s = next;
+    if (s.status === "finished") { go(`/results/${s.id}`); return; }
+    const mine = isMine(s);
+    const multi = s.device_mode === "multi";
+    const blocks = [];
+    if (multi && s.status === "lobby") blocks.push(lobbyBlock(s, draw));
+    else if (multi && s.status === "active") {
+      if (s.lobby.my_seat || s.lobby.is_host) blocks.push(h("a", { class: "btn primary xl block", href: s.game.url }, "▶ Open the game"));
+      else if (me.player && s.lobby.seats.some((x) => x.player_id === me.player.id)) blocks.push(lobbyBlock(s, draw));
+      else blocks.push(h("p", { class: "small muted center" }, "This game is already running. You can watch it live."));
+    } else if (s.status === "active") blocks.push(...singleActions(s));
+    if (["active", "lobby"].includes(s.status)) {
+      blocks.push(h("a", { class: "btn block", href: `#/watch/${s.id}` }, "👀 Watch live"));
+      if (s.controlled_by_me || s.live_status === "paused") blocks.push(h("button", { class: "btn ghost block", onclick: () => discard(s) }, "🗑 Discard game"));
+    }
+    mount(root,
+      topbar(`${s.game.emoji} ${s.game.name}`, true),
+      h("div", { class: "card stack" },
+        h("div", { class: "row between" }, statusChip(s.live_status), h("span", { class: "small muted" }, `${multi ? "📱📱 Everyone's phones" : "📱 One phone"} · ${s.mode === "teams" ? "Teams" : "Solo"}`)),
+        h("div", { class: "small muted" }, `Started ${ago(s.started_at)} · ${controllerText(s)}`),
+        mine && h("div", { class: "badge gold", style: { alignSelf: "flex-start" } }, `${me.player.emoji} You're in this game`)),
+      !(multi && s.status === "lobby") && (s.mode === "teams"
+        ? s.teams.map((t) => h("div", { class: "card tight team-col", style: { "--team": t.color } }, h("b", null, h("span", { class: "team-dot" }), t.name), playerChips(s, t.player_ids)))
+        : h("div", { class: "card tight" }, playerChips(s))),
+      !["active", "lobby"].includes(s.status) ? h("div", { class: "card muted" }, "This game is no longer running.") : null,
+      ...blocks);
+  }
+  draw();
+  const sock = openSocket({ session: s.id, onMessage: (msg) => { if (msg.type === "session" && !document.querySelector(".modal-back")) draw(msg.session); } });
+  onLeave(() => sock.close());
+  void app;
+  return root;
+}
+
+// ---------------------------------------------------------------- watch / TV
+export async function watchView({ params, query }) {
+  let s = await api(`/api/sessions/${params[0]}`);
+  const tv = query.get("tv") === "1";
+  document.body.classList.toggle("tv", tv);
+  onLeave(() => document.body.classList.remove("tv"));
+  const root = h("div", { class: "stack watch" });
+  function draw(next) {
+    if (next) s = next;
+    const w = s.watch || {};
+    const rows = (w.scoreboard || []).slice().sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+    mount(root,
+      !tv && topbar("Watching", true, h("a", { class: "btn small", href: `#/watch/${s.id}?tv=1` }, "📺 TV mode")),
+      h("div", { class: "center stack", style: { gap: ".3rem" } },
+        h("div", { class: "watch-emoji" }, s.game.emoji),
+        h("h1", { class: "logo watch-title" }, s.game.name),
+        h("div", null, statusChip(s.live_status))),
+      w.headline ? h("div", { class: "watch-headline center" }, w.headline) : null,
+      rows.length
+        ? h("div", { class: "card tight list watch-board" }, rows.map((r, i) => h("div", { class: "list-item" },
+            h("span", { class: "watch-rank" }, ["🥇", "🥈", "🥉"][i] || i + 1),
+            r.color ? h("span", { class: "team-dot", style: { "--team": r.color } }) : h("span", { class: "watch-e" }, r.emoji),
+            h("span", { class: "grow watch-name" }, r.name),
+            h("span", { class: "watch-score" }, r.score ?? "–"))))
+        : h("div", { class: "card center muted" }, s.status === "lobby" ? "Waiting for players to join…" : "Scores appear after the first round."),
+      tv ? h("a", { class: "btn small ghost", href: `#/watch/${s.id}`, style: { alignSelf: "center" } }, "Exit TV mode") : null);
+  }
+  draw();
+  const sock = openSocket({ session: s.id, onMessage: (msg) => { if (msg.type === "session") draw(msg.session); } });
+  onLeave(() => sock.close());
+  return root;
 }
 
 // ---------------------------------------------------------------- invite

@@ -85,6 +85,7 @@ def create_session(
     teams: list[dict[str, Any]] | None,
     settings: dict[str, Any] | None,
     device_id: str | None = None,
+    device_mode: str = "single",
 ) -> GameSession:
     manifest = get_manifest(game_id)
     game = db.get(Game, game_id)
@@ -92,6 +93,15 @@ def create_session(
         raise SessionError("Unknown or disabled game")
     if mode not in manifest["modes"]:
         raise SessionError(f"Mode '{mode}' is not supported by this game")
+    if device_mode not in manifest.get("devices", ["single"]):
+        raise SessionError("This game can't be played that way")
+    if device_mode == "multi":
+        from ..engines import get_engine
+
+        if get_engine(game_id) is None:
+            raise SessionError("This game has no multi-phone engine")
+        if not device_id:
+            raise SessionError("Missing device id")
 
     if mode == "teams":
         if not teams:
@@ -121,7 +131,8 @@ def create_session(
         night_id=get_or_create_night(db).id,
         mode=mode,
         settings=merged_settings(manifest, game.settings, settings),
-        status="active",
+        status="lobby" if device_mode == "multi" else "active",
+        device_mode=device_mode,
         controller_device_id=device_id,
         controller_seen_at=utcnow() if device_id else None,
     )
@@ -138,6 +149,14 @@ def create_session(
     db.add(session)
     db.flush()
     db.refresh(session)
+    if device_mode == "multi":  # the host takes their own seat if they're in the lineup
+        from ..models import Device
+
+        host = db.get(Device, device_id)
+        for p in session.participants:
+            if host is not None and host.player_id == p.player_id:
+                p.device_id, p.joined_at = device_id, utcnow()
+        db.flush()
     return session
 
 
@@ -242,7 +261,7 @@ def active_sessions(db: Session, hours: int = 24) -> list[GameSession]:
     return list(
         db.scalars(
             select(GameSession)
-            .where(GameSession.status == "active", GameSession.started_at >= since)
+            .where(GameSession.status.in_(["active", "lobby"]), GameSession.started_at >= since)
             .order_by(GameSession.started_at.desc())
         )
     )

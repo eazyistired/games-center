@@ -8,7 +8,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -16,9 +16,12 @@ from . import __version__
 from .api import admin, public
 from .config import Settings, get_settings
 from .db import SessionLocal, init_engine
+from .engines import load_engines
 from .migrate import run_migrations
+from .realtime import LIVE_ROOM, hub
 from .services import backup as bk
 from .services.decks import sync_builtin_decks
+from .services.live import valid_device_id
 from .services.registry import load_manifests, sync_games
 
 log = logging.getLogger("games_center")
@@ -29,6 +32,7 @@ def startup(settings: Settings) -> None:
     init_engine(settings.db_path)
     run_migrations(settings.db_path)
     load_manifests(settings.games_dir)
+    load_engines()
     with SessionLocal() as db:
         sync_games(db)
         sync_builtin_decks(db, settings.games_dir)
@@ -36,6 +40,31 @@ def startup(settings: Settings) -> None:
         from .services.runtime import apply_runtime, get_runtime
 
         apply_runtime(get_runtime(db))
+
+
+def build_payload(session_id: int, device_id: str | None) -> dict | None:
+    from .models import GameSession
+    from .services.multi import session_payload
+
+    with SessionLocal() as db:
+        s = db.get(GameSession, session_id)
+        if s is None:
+            return None
+        return {
+            "type": "session",
+            "session": session_payload(db, s, device_id, hub.online_devices(s.id)),
+        }
+
+
+def touch(device_id: str | None) -> None:
+    """Any websocket message = this phone is active."""
+    if not device_id:
+        return
+    from .services.live import touch_device
+
+    with SessionLocal() as db:
+        touch_device(db, device_id)
+        db.commit()
 
 
 def close_idle(settings: Settings) -> None:
@@ -80,6 +109,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         startup(settings)
+        hub.loop = asyncio.get_running_loop()
+        hub.build_session_payload = build_payload
         tasks = [asyncio.create_task(housekeeping_loop(settings))]
         if settings.auto_backup:
             tasks.append(asyncio.create_task(backup_loop(settings)))
@@ -109,6 +140,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         else:
             response.headers.setdefault("Cache-Control", "no-store")
         return response
+
+    @app.websocket("/ws")
+    async def websocket(ws: WebSocket, session: int | None = None, device: str | None = None):
+        """?session=ID -> pushed session payloads (this phone's view); otherwise the live list."""
+        device_id = valid_device_id(device)
+        room = f"s:{session}" if session else LIVE_ROOM
+        initial = await asyncio.to_thread(build_payload, session, device_id) if session else None
+        await hub.serve(ws, room, device_id, on_message=touch, initial=initial)
 
     @app.get("/admin", include_in_schema=False)
     def admin_redirect() -> RedirectResponse:

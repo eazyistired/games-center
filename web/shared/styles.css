@@ -232,3 +232,20 @@ table.board .who .e { font-size: 1.3rem; }
 .me-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .7rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-weight: 700; font-size: .9rem; cursor: pointer; color: var(--text); font-family: inherit; }
 .section-title .live-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--bad); margin-right: .4rem; animation: blink 1.4s infinite; vertical-align: middle; }
 @keyframes blink { 50% { opacity: .35; } }
+
+/* ---- watch / TV */
+body.tv .nav { display: none; }
+body.tv .page { max-width: 1100px; padding-bottom: 32px; }
+.watch-emoji { font-size: 3rem; line-height: 1; }
+body.tv .watch-emoji { font-size: 5rem; }
+body.tv .watch-title { font-size: 3rem; }
+.watch-headline { font-size: 1.2rem; font-weight: 700; color: var(--muted); }
+body.tv .watch-headline { font-size: 2rem; }
+.watch-board .list-item { padding: .8rem .5rem; }
+.watch-rank { width: 2.2rem; font-weight: 900; font-size: 1.2rem; text-align: center; }
+.watch-e { font-size: 1.5rem; }
+.watch-name { font-weight: 750; font-size: 1.15rem; }
+.watch-score { font-weight: 900; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+body.tv .watch-name { font-size: 2rem; }
+body.tv .watch-score { font-size: 2.6rem; }
+body.tv .watch-e, body.tv .watch-rank { font-size: 2.2rem; width: 3.5rem; }

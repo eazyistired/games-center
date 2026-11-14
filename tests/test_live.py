@@ -172,3 +172,27 @@ def test_quiet_and_idle_settings(admin, players):
     c.put("/api/admin/settings", json={"quiet_seconds": 12})
     assert c.get(f"/api/sessions/{sid}").json()["heartbeat_ms"] == 3000
     c.put("/api/admin/settings", json={"quiet_seconds": 30})
+
+
+def test_watch_scoreboard_for_one_phone_games(admin, players):
+    c = admin
+    sid = new_session(c, players)["id"]
+    w = c.get(f"/api/sessions/{sid}", headers=C).json()["watch"]
+    assert w["scoreboard"] == []  # nothing until the first save with scores
+    c.put(
+        f"/api/sessions/{sid}/progress",
+        json={
+            "state": {"secret": "x"},
+            "partial": {
+                "scores": [
+                    {"player_id": players[0], "score": 4},
+                    {"player_id": players[1], "score": 1},
+                ],
+                "details": {"summary": "1 of 3 turns played"},
+            },
+        },
+        headers=A,
+    )
+    w = c.get(f"/api/sessions/{sid}", headers=C).json()["watch"]
+    assert w["headline"] == "1 of 3 turns played"
+    assert [r["score"] for r in w["scoreboard"]] == [4, 1]
