@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -26,6 +27,8 @@ def _defaults() -> dict[str, Any]:
         "scoring_formula": "placement",
         "min_sessions": 3,
         "quiet_seconds": 30,
+        "app_url": "",  # e.g. https://games.grzv.local (used after installing the certificate)
+        "setup_url": "",  # plain-HTTP address of this app, e.g. http://192.168.1.10:8080
         "idle_hours": s.idle_hours,
     }
 
@@ -65,6 +68,16 @@ def validate(updates: dict[str, Any]) -> dict[str, Any]:
             value = float(value)
             if not 0.25 <= value <= 48:
                 raise ValueError("Idle games must close after 0.25-48 hours")
+        elif key in ("app_url", "setup_url"):
+            value = str(value or "").strip().rstrip("/")
+            if value and not re.match(r"^https?://[^\s/]+(:\d+)?$", value):
+                raise ValueError(
+                    "Use an address like https://games.grzv.local or http://192.168.1.10:8080"
+                )
+            if key == "setup_url" and value.startswith("https://"):
+                raise ValueError(
+                    "The setup address must be plain http:// (phones don't trust https yet)"
+                )
         elif key == "min_sessions":
             value = int(value)
             if not 1 <= value <= 100:

@@ -138,6 +138,12 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] After the game: pop-up "Save the friends' words?" → a normal custom deck (shared by the
       word games, editable in Admin → Decks)
 
+### Phone setup for HTTPS
+- [x] Admin → Settings → Home certificate: upload the CA's public cert (keys refused), app + setup
+      addresses, QR code; 📲 Invite has a "First time on this phone" QR
+- [x] `/setup` page (plain HTTP): per-device steps (iPhone / Android / computer), install button
+      (`/ca.crt`), fingerprint, "Open the games"
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

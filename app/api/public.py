@@ -12,7 +12,7 @@ from .. import __version__
 from ..config import get_settings
 from ..models import LIVE_STATUSES, Crew, Deck, Game, GameNight, GameSession, Player, utcnow
 from ..realtime import hub
-from ..services import collect, live, multi
+from ..services import certs, collect, live, multi
 from ..services import leaderboards as lb
 from ..services.decks import deck_out, words_for_session
 from ..services.nights import current_night_date
@@ -539,6 +539,15 @@ def set_identity(db: DB, body: WhoAmI, device: DeviceId) -> dict[str, Any]:
     dev.player_id = body.player_id
     db.commit()
     return device_out(db, device)
+
+
+# ---------------------------------------------------------------- home certificate (install on phones)
+
+
+@router.get("/ca")
+def ca_info(db: DB) -> dict[str, Any]:
+    rt = get_runtime(db)
+    return certs.info() | {"app_url": rt["app_url"], "setup_url": rt["setup_url"]}
 
 
 # ---------------------------------------------------------------- invite QR

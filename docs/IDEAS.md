@@ -44,7 +44,7 @@ Most of these only need data that is already stored (`session_participants`, `se
 - [ ] Fun stats: badges, head-to-head, end-of-night awards, seasons (see above)
 - [ ] **Real-phone tuning** after a few game nights: Heads Up tilt thresholds, "quiet after"
       seconds (Admin → Settings), takeover timing
-- [ ] `docs/HOME_SERVER.md`: fill in the items marked **(verify)** (pool name, certificate type,
-      host port)
+- [ ] `docs/HOME_SERVER.md`: fill in the items marked **(verify)** (app dataset path, host port)
+- [x] HTTPS on phones: NPM on 443, home CA, setup QR in the admin panel
 - [ ] GitHub: delete the old remote branches `design-refresh`, `imposter-game`,
       `three-rounds`, `tuned-in` (this Claude session can't delete remote branches)

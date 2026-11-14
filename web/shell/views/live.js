@@ -1,6 +1,6 @@
 // Live sessions in the shell: identity, heartbeat + takeover approvals, session page, invite QR.
 import { api } from "/static/api.js";
-import { h, mount, toast, modal, ago, fmtDate, empty } from "/static/ui.js";
+import { h, mount, toast, modal, ago, fmtDate, empty, seg } from "/static/ui.js";
 import { go, rerender, refresh, onLeave, parseHash } from "../app.js";
 import { openSocket } from "/static/socket.js";
 import { topbar } from "./components.js";
@@ -326,13 +326,29 @@ export async function watchView({ params, query }) {
 
 // ---------------------------------------------------------------- invite
 export async function inviteView() {
-  const url = location.origin + "/";
-  return h("div", { class: "stack center", style: { alignItems: "center" } },
-    topbar("Invite", true),
-    h("p", { class: "muted", style: { margin: 0 } }, "Scan to open the games on your phone"),
-    h("img", { src: `/api/qr.svg?data=${encodeURIComponent(url)}`, alt: "QR code", class: "qr" }),
-    h("div", { class: "logo", style: { fontSize: "1.3rem" } }, url.replace(/^https?:\/\//, "").replace(/\/$/, "")),
-    h("p", { class: "small muted", style: { maxWidth: "340px" } }, "Then pick your name. Live games show up on the home screen and under Nights."));
+  const ca = await api("/api/ca").catch(() => ({ available: false }));
+  const url = (ca.app_url || location.origin).replace(/\/$/, "") + "/";
+  const setup = `${(ca.setup_url || `http://${location.host}`).replace(/\/$/, "")}/setup/`;
+  let tab = "join";
+  const box = h("div", { class: "stack center", style: { alignItems: "center" } });
+  const draw = () => mount(box,
+    ca.available && seg([{ value: "join", label: "📲 Join" }, { value: "setup", label: "🔐 First time on this phone" }], tab, (v) => { tab = v; draw(); }),
+    tab === "join"
+      ? [
+          h("p", { class: "muted", style: { margin: 0 } }, "Scan to open the games on your phone"),
+          h("img", { src: `/api/qr.svg?data=${encodeURIComponent(url)}`, alt: "QR code", class: "qr" }),
+          h("div", { class: "logo", style: { fontSize: "1.3rem" } }, url.replace(/^https?:\/\//, "").replace(/\/$/, "")),
+          h("p", { class: "small muted", style: { maxWidth: "340px" } }, "Then pick your name. Live games show up on the home screen and under Nights."),
+          ca.available && h("p", { class: "small", style: { maxWidth: "340px" } }, "Page won't open or says “not secure”? Use ", h("b", null, "🔐 First time on this phone"), " first."),
+        ]
+      : [
+          h("p", { class: "muted", style: { margin: 0 } }, "Scan to install the home certificate (once per phone)"),
+          h("img", { src: `/api/qr.svg?data=${encodeURIComponent(setup)}`, alt: "QR code", class: "qr" }),
+          h("div", { class: "small muted", style: { wordBreak: "break-all" } }, setup),
+          h("p", { class: "small muted", style: { maxWidth: "340px" } }, "It shows the steps for that phone. Afterwards, scan the 📲 Join code."),
+        ]);
+  draw();
+  return h("div", { class: "stack" }, topbar("Invite", true), box);
 }
 
 export { empty };
