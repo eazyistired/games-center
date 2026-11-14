@@ -499,6 +499,14 @@ views.settings = async () => {
         const r = await guarded(() => api("/api/admin/recompute", { method: "POST" }));
         toast(`Recalculated ${r.sessions} games`, "good");
       } }, "↻ Recalculate all points")),
+    h("div", { class: "card stack" },
+      h("h3", { style: { margin: 0 } }, "Live games"),
+      h("label", { class: "field" }, "Phone counts as quiet after (seconds)",
+        h("span", { class: "help" }, "No check-in for this long → the game shows ⏸ Paused and another phone can take it over without asking. Lower = faster takeovers; higher = fewer false \"quiet\" moments when a phone briefly locks. Phones check in every few seconds automatically."),
+        h("input", { type: "number", min: 10, max: 600, value: v.quiet_seconds, oninput: (e) => { v.quiet_seconds = Number(e.target.value); } })),
+      h("label", { class: "field" }, "Close idle games after (hours)",
+        h("span", { class: "help" }, "Unfinished games nobody has open for this long are finished with the scores so far (or discarded if no round was completed)."),
+        h("input", { type: "number", min: 0.25, max: 48, step: 0.25, value: v.idle_hours, oninput: (e) => { v.idle_hours = Number(e.target.value); } }))),
     h("button", { class: "btn primary", onclick: async () => {
       await guarded(() => api("/api/admin/settings", { method: "PUT", body: v }));
       toast("Settings saved", "good");

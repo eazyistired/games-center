@@ -154,3 +154,21 @@ def test_idle_sessions_auto_finish_or_abandon(admin, players):
     done = get(s2)
     assert done["status"] == "finished" and "auto-finished" in done["details"]["summary"]
     assert {p["player_id"]: p["placement"] for p in done["participants"]}[players[0]] == 1
+
+
+def test_quiet_and_idle_settings(admin, players):
+    from app.services import live
+
+    c = admin
+    r = c.put("/api/admin/settings", json={"quiet_seconds": 60, "idle_hours": 1.5})
+    assert r.status_code == 200 and r.json()["quiet_seconds"] == 60
+    assert live.ACTIVE_SECONDS == 60
+    sid = new_session(c, players)["id"]
+    age_controller(sid, 45)  # quiet for 45 s: still "playing" with a 60 s window
+    s = c.get(f"/api/sessions/{sid}", headers=B).json()
+    assert s["live_status"] == "playing" and s["quiet_seconds"] == 60 and s["heartbeat_ms"] == 5000
+    assert c.put("/api/admin/settings", json={"quiet_seconds": 5}).status_code == 400
+    assert c.put("/api/admin/settings", json={"idle_hours": 100}).status_code == 400
+    c.put("/api/admin/settings", json={"quiet_seconds": 12})
+    assert c.get(f"/api/sessions/{sid}").json()["heartbeat_ms"] == 3000
+    c.put("/api/admin/settings", json={"quiet_seconds": 30})

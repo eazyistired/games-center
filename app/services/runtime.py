@@ -25,6 +25,8 @@ def _defaults() -> dict[str, Any]:
         "night_cutoff_hour": s.night_cutoff_hour,
         "scoring_formula": "placement",
         "min_sessions": 3,
+        "quiet_seconds": 30,
+        "idle_hours": s.idle_hours,
     }
 
 
@@ -55,6 +57,14 @@ def validate(updates: dict[str, Any]) -> dict[str, Any]:
         elif key == "scoring_formula":
             if value not in SCORING_FORMULAS:
                 raise ValueError("Unknown scoring formula")
+        elif key == "quiet_seconds":
+            value = int(value)
+            if not 10 <= value <= 600:
+                raise ValueError("'Quiet after' must be between 10 and 600 seconds")
+        elif key == "idle_hours":
+            value = float(value)
+            if not 0.25 <= value <= 48:
+                raise ValueError("Idle games must close after 0.25-48 hours")
         elif key == "min_sessions":
             value = int(value)
             if not 1 <= value <= 100:
@@ -73,4 +83,13 @@ def set_runtime(db: Session, updates: dict[str, Any]) -> dict[str, Any]:
         else:
             row.value = value
     db.flush()
-    return get_runtime(db)
+    values = get_runtime(db)
+    apply_runtime(values)
+    return values
+
+
+def apply_runtime(values: dict[str, Any]) -> None:
+    """Push settings that live outside the DB (in-process) to where they're used."""
+    from . import live
+
+    live.configure(values["quiet_seconds"])

@@ -22,7 +22,19 @@ from .registry import get_manifest
 
 log = logging.getLogger(__name__)
 
-ACTIVE_SECONDS = 30
+ACTIVE_SECONDS = 30  # "quiet after" - set from the runtime settings (Admin -> Settings)
+
+
+def configure(quiet_seconds: int) -> None:
+    global ACTIVE_SECONDS
+    ACTIVE_SECONDS = int(quiet_seconds)
+
+
+def heartbeat_ms() -> int:
+    """How often phones check in: well within the quiet window."""
+    return int(max(2, min(5, ACTIVE_SECONDS / 4)) * 1000)
+
+
 _DEVICE_RE = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 
 
@@ -88,6 +100,8 @@ def live_info(db: Session, s: GameSession, device_id: str | None) -> dict[str, A
         if s.controller_device_id
         else None,
         "controlled_by_me": bool(device_id) and s.controller_device_id == device_id,
+        "heartbeat_ms": heartbeat_ms(),
+        "quiet_seconds": ACTIVE_SECONDS,
     }
 
 

@@ -33,13 +33,18 @@ def startup(settings: Settings) -> None:
         sync_games(db)
         sync_builtin_decks(db, settings.games_dir)
         db.commit()
+        from .services.runtime import apply_runtime, get_runtime
+
+        apply_runtime(get_runtime(db))
 
 
 def close_idle(settings: Settings) -> None:
     from .services.live import close_idle_sessions
 
     with SessionLocal() as db:
-        result = close_idle_sessions(db, settings.idle_hours)
+        from .services.runtime import get_runtime
+
+        result = close_idle_sessions(db, get_runtime(db)["idle_hours"])
         db.commit()
     if any(result.values()):
         log.info("idle sessions closed: %s", result)
