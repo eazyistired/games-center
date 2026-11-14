@@ -4,14 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from .. import __version__
 from ..config import get_settings
-from ..models import Crew, Deck, Game, GameNight, GameSession, Player
+from ..models import Crew, Deck, Game, GameNight, GameSession, Player, utcnow
 from ..services import leaderboards as lb
+from ..services import live
 from ..services.decks import deck_out, words_for_session
 from ..services.nights import current_night_date
 from ..services.registry import deck_game, get_manifest, merged_settings
@@ -25,7 +26,7 @@ from ..services.sessions import (
     session_out,
     submit_result,
 )
-from .deps import DB, bad_request, get_session_or_404
+from .deps import DB, DeviceId, bad_request, get_session_or_404
 
 router = APIRouter(prefix="/api", tags=["public"])
 
@@ -36,13 +37,16 @@ router = APIRouter(prefix="/api", tags=["public"])
 @router.get("/health")
 def health(db: DB) -> dict[str, Any]:
     db.execute(select(1))
-    return {"status": "ok", "version": __version__}
+    s = get_settings()
+    return {"status": "ok", "version": __version__, "build": s.build_sha, "built": s.build_date}
 
 
 @router.get("/config")
 def config(db: DB) -> dict[str, Any]:
     rt = get_runtime(db)
+    settings = get_settings()
     return {
+        "build": {"sha": settings.build_sha, "date": settings.build_date},
         "site_name": rt["site_name"],
         "tonight": current_night_date(db).isoformat(),
         "min_sessions": rt["min_sessions"],
@@ -231,7 +235,8 @@ class SessionIn(BaseModel):
 
 
 @router.post("/sessions")
-def start_session(db: DB, body: SessionIn) -> dict[str, Any]:
+def start_session(db: DB, body: SessionIn, device: DeviceId) -> dict[str, Any]:
+    live.touch_device(db, device)
     try:
         s = create_session(
             db,
@@ -240,35 +245,194 @@ def start_session(db: DB, body: SessionIn) -> dict[str, Any]:
             body.player_ids,
             [t.model_dump() for t in body.teams] if body.teams else None,
             body.settings,
+            device_id=device,
         )
     except SessionError as exc:
         raise bad_request(str(exc)) from exc
     db.commit()
-    return session_out(s)
+    return full_session(db, s, device)
 
 
-@router.get("/sessions/active")
-def list_active(db: DB) -> list[dict[str, Any]]:
-    return [session_out(s) for s in active_sessions(db)]
+def full_session(db: DB, s, device: str | None) -> dict[str, Any]:
+    return session_out(s) | live.live_info(db, s, device)
+
+
+def live_error(exc: live.LiveError) -> HTTPException:
+    return HTTPException(exc.status, {"message": str(exc), **exc.info})
+
+
+@router.get("/sessions/live")
+def list_live(db: DB, device: DeviceId) -> list[dict[str, Any]]:
+    """Unfinished sessions (playing or paused), newest first."""
+    return [full_session(db, s, device) for s in active_sessions(db, hours=24)]
+
+
+@router.get("/sessions/active", include_in_schema=False)
+def list_active(db: DB, device: DeviceId) -> list[dict[str, Any]]:
+    return list_live(db, device)
 
 
 @router.get("/sessions/{session_id}")
-def get_session(db: DB, session_id: int) -> dict[str, Any]:
-    return session_out(get_session_or_404(db, session_id))
+def get_session(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
+    return full_session(db, get_session_or_404(db, session_id), device)
 
 
 class ProgressIn(BaseModel):
     state: dict[str, Any] | None
+    version: int | None = None  # the version this state was based on (optimistic locking)
+    partial: dict[str, Any] | None = None  # {scores, details}: used if the session goes idle
 
 
 @router.put("/sessions/{session_id}/progress")
-def save_progress(db: DB, session_id: int, body: ProgressIn) -> dict[str, bool]:
+def save_progress(db: DB, session_id: int, body: ProgressIn, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
     if s.status != "active":
         raise bad_request(f"Session is {s.status}")
+    try:
+        live.require_control(s, device)
+    except live.LiveError as exc:
+        raise live_error(exc) from exc
+    if body.version is not None and body.version != s.state_version:
+        raise HTTPException(409, {"message": "Session changed on another phone", "lost": True})
     s.progress = body.state
+    if body.partial is not None:
+        s.partial_result = body.partial
+    s.state_version += 1
+    if device:
+        s.controller_device_id = device
+        s.controller_seen_at = utcnow()
+    live.touch_device(db, device)
+    db.commit()
+    return {"ok": True, "version": s.state_version}
+
+
+# ---------------------------------------------------------------- live control & takeover
+
+
+@router.post("/sessions/{session_id}/control")
+def claim_control(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
+    """Become the phone driving this session (if it's free, quiet, or already ours)."""
+    s = get_session_or_404(db, session_id)
+    live.touch_device(db, device)
+    try:
+        live.claim_control(db, s, device)
+    except live.LiveError as exc:
+        db.commit()
+        raise live_error(exc) from exc
+    db.commit()
+    return full_session(db, s, device)
+
+
+@router.post("/sessions/{session_id}/heartbeat")
+def session_heartbeat(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
+    s = get_session_or_404(db, session_id)
+    live.touch_device(db, device)
+    out = live.heartbeat(db, s, device)
+    db.commit()
+    return out
+
+
+@router.post("/sessions/{session_id}/takeover")
+def takeover(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
+    s = get_session_or_404(db, session_id)
+    live.touch_device(db, device)
+    try:
+        out = live.request_takeover(db, s, device)
+    except live.LiveError as exc:
+        raise live_error(exc) from exc
+    db.commit()
+    return out
+
+
+@router.get("/sessions/{session_id}/takeover")
+def takeover_status(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
+    s = get_session_or_404(db, session_id)
+    live.touch_device(db, device)
+    out = live.takeover_status(db, s, device)
+    db.commit()
+    return out
+
+
+@router.delete("/sessions/{session_id}/takeover")
+def cancel_takeover(db: DB, session_id: int, device: DeviceId) -> dict[str, bool]:
+    live.cancel_takeover(db, get_session_or_404(db, session_id), device)
     db.commit()
     return {"ok": True}
+
+
+class DecisionIn(BaseModel):
+    approve: bool
+
+
+@router.post("/takeover/{request_id}/decide")
+def decide_takeover(db: DB, request_id: int, body: DecisionIn, device: DeviceId) -> dict[str, bool]:
+    try:
+        live.decide(db, request_id, device, body.approve)
+    except live.LiveError as exc:
+        raise live_error(exc) from exc
+    db.commit()
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- devices ("who are you?")
+
+
+class HeartbeatIn(BaseModel):
+    label: str | None = None
+
+
+def device_out(db: DB, device: str | None) -> dict[str, Any]:
+    from ..models import Device
+
+    d = db.get(Device, device) if device else None
+    return {"id": device, "player": live.player_brief(d)}
+
+
+@router.post("/devices/heartbeat")
+def device_heartbeat(db: DB, device: DeviceId, body: HeartbeatIn | None = None) -> dict[str, Any]:
+    """Called by the app every ~15 s: keeps the phone 'active' and returns approvals it owes."""
+    if not device:
+        raise bad_request("Missing X-Device-Id header")
+    live.touch_device(db, device, body.label if body else None)
+    out = {
+        "device": device_out(db, device),
+        "requests": live.pending_for(db, device),
+        "heartbeat_ms": live.heartbeat_ms(),
+    }
+    db.commit()
+    return out
+
+
+class WhoAmI(BaseModel):
+    player_id: int | None
+
+
+@router.put("/devices/me")
+def set_identity(db: DB, body: WhoAmI, device: DeviceId) -> dict[str, Any]:
+    if not device:
+        raise bad_request("Missing X-Device-Id header")
+    dev = live.touch_device(db, device)
+    if body.player_id is not None:
+        p = db.get(Player, body.player_id)
+        if p is None or not p.active:
+            raise bad_request("Unknown player")
+    dev.player_id = body.player_id
+    db.commit()
+    return device_out(db, device)
+
+
+# ---------------------------------------------------------------- invite QR
+
+
+@router.get("/qr.svg", include_in_schema=False)
+def qr_code(data: str = Query(..., max_length=300)) -> Response:
+    import io
+
+    import segno
+
+    buf = io.BytesIO()
+    segno.make(data, error="m").save(buf, kind="svg", scale=10, border=2, dark="#000", light="#fff")
+    return Response(buf.getvalue(), media_type="image/svg+xml")
 
 
 @router.get("/sessions/{session_id}/words")
@@ -294,8 +458,12 @@ class ResultIn(BaseModel):
 
 
 @router.post("/sessions/{session_id}/result")
-def post_result(db: DB, session_id: int, body: ResultIn) -> dict[str, Any]:
+def post_result(db: DB, session_id: int, body: ResultIn, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
+    try:
+        live.require_control(s, device)
+    except live.LiveError as exc:
+        raise live_error(exc) from exc
     try:
         submit_result(
             db,
@@ -307,13 +475,15 @@ def post_result(db: DB, session_id: int, body: ResultIn) -> dict[str, Any]:
     except SessionError as exc:
         raise bad_request(str(exc)) from exc
     db.commit()
-    return session_out(s)
+    return full_session(db, s, device)
 
 
 @router.post("/sessions/{session_id}/abandon")
-def abandon(db: DB, session_id: int) -> dict[str, Any]:
+def abandon(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
     if s.status == "active":
+        if s.controller_device_id != device and live.controller_active(s):
+            raise HTTPException(409, {"message": "This game is running on another phone"})
         s.status = "abandoned"
         s.finished_at = None
         db.commit()
@@ -371,7 +541,9 @@ def list_nights(db: DB, limit: int = 60) -> list[dict[str, Any]]:
     nights = db.scalars(
         select(GameNight)
         .where(
-            GameNight.id.in_(select(GameSession.night_id).where(GameSession.status == "finished"))
+            GameNight.id.in_(
+                select(GameSession.night_id).where(GameSession.status.in_(["finished", "active"]))
+            )
         )
         .order_by(GameNight.date.desc(), GameNight.id.desc())
         .limit(limit)
@@ -381,12 +553,17 @@ def list_nights(db: DB, limit: int = 60) -> list[dict[str, Any]]:
         summary = night_summary(db, n)
         standings = lb.leaderboard(db, night_id=n.id)
         summary["top"] = standings[:3]
+        summary["live_count"] = db.scalar(
+            select(func.count())
+            .select_from(GameSession)
+            .where(GameSession.night_id == n.id, GameSession.status == "active")
+        )
         out.append(summary)
     return out
 
 
 @router.get("/nights/{night_id}")
-def get_night(db: DB, night_id: int) -> dict[str, Any]:
+def get_night(db: DB, night_id: int, device: DeviceId) -> dict[str, Any]:
     night = db.get(GameNight, night_id)
     if night is None:
         raise HTTPException(404, "Night not found")
@@ -394,10 +571,10 @@ def get_night(db: DB, night_id: int) -> dict[str, Any]:
     out["standings"] = lb.leaderboard(db, night_id=night.id)
     sessions = db.scalars(
         select(GameSession)
-        .where(GameSession.night_id == night.id, GameSession.status == "finished")
-        .order_by(GameSession.finished_at)
+        .where(GameSession.night_id == night.id, GameSession.status.in_(["finished", "active"]))
+        .order_by(GameSession.started_at)
     )
-    out["sessions"] = [session_out(s) for s in sessions]
+    out["sessions"] = [full_session(db, s, device) for s in sessions]
     return out
 
 

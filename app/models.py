@@ -60,6 +60,13 @@ class GameSession(Base):
     details: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=None)
     started_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
+    # live play: which device drives the session (one-phone mode) and when it was last seen
+    device_mode: Mapped[str] = mapped_column(String(10), default="single", server_default="single")
+    controller_device_id: Mapped[str | None] = mapped_column(String(64), default=None)
+    controller_seen_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
+    state_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # scores so far, reported by the game with each save (used to auto-finish idle sessions)
+    partial_result: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=None)
 
     night: Mapped[GameNight] = relationship()
     teams: Mapped[list[SessionTeam]] = relationship(
@@ -167,3 +174,36 @@ class AuditLog(Base):
     entity: Mapped[str] = mapped_column(String(40))
     entity_id: Mapped[str | None] = mapped_column(String(40), default=None)
     detail: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=None)
+
+
+class Device(Base):
+    """An anonymous phone/browser. Remembers which player it is (no login)."""
+
+    __tablename__ = "devices"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    player_id: Mapped[int | None] = mapped_column(
+        ForeignKey("players.id", ondelete="SET NULL"), default=None, index=True
+    )
+    label: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    last_seen: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    player: Mapped[Player | None] = relationship()
+
+
+class TakeoverRequest(Base):
+    """A phone asking to take control of a session; another phone must allow it."""
+
+    __tablename__ = "takeover_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("sessions.id", ondelete="CASCADE"), index=True
+    )
+    requester_device_id: Mapped[str] = mapped_column(String(64), index=True)
+    approver_device_id: Mapped[str] = mapped_column(String(64), index=True)
+    reason: Mapped[str] = mapped_column(String(20))  # controller | identity
+    status: Mapped[str] = mapped_column(String(12), default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)

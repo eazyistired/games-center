@@ -1,11 +1,17 @@
 FROM python:3.12-slim
 
+# set by CI: shown in Admin -> Dashboard and /api/health
+ARG BUILD_SHA=dev
+ARG BUILD_DATE=
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     DATA_DIR=/data \
-    PORT=8080
+    PORT=8080 \
+    BUILD_SHA=${BUILD_SHA} \
+    BUILD_DATE=${BUILD_DATE}
 
 WORKDIR /app
 

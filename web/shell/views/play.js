@@ -1,5 +1,5 @@
 import { api } from "/static/api.js";
-import { h, mount, toast, ago, seg, switchField, promptDialog, confirmDialog } from "/static/ui.js";
+import { h, mount, toast, ago, seg, switchField, promptDialog, confirmDialog, modal } from "/static/ui.js";
 import { topbar } from "./components.js";
 
 const TEAM_COLORS = ["#d9452b", "#3d8fd6", "#f5c518", "#1fa35b", "#a26be0", "#e8892b"];
@@ -103,6 +103,20 @@ export async function playView({ params, query, app }) {
 
   async function start(btn) {
     btn.disabled = true;
+    // usually one session per game at a time: offer the running one first
+    const running = (await api("/api/sessions/live").catch(() => [])).filter((x) => x.game_id === gameId);
+    if (running.length) {
+      const r = running[0];
+      const where = r.controlled_by_me ? "on this phone" : r.controller?.player ? `on ${r.controller.player.emoji} ${r.controller.player.name}'s phone` : "";
+      const choice = await modal(`${game.emoji} ${game.name} is already running`,
+        h("p", { class: "muted" }, `${r.live_status === "playing" ? "Playing" : "Paused"} ${where}, with ${r.participants.map((p) => p.emoji).join("")}. Continue that one, or start a new game? The old one closes by itself after 2 h without activity.`), [
+          { label: "Cancel", class: "ghost", value: null },
+          { label: "Start new", value: "new" },
+          { label: "Go to it", class: "primary", value: "go" },
+        ]);
+      if (choice === "go") { location.hash = `/sessions/${r.id}`; return; }
+      if (choice !== "new") { btn.disabled = false; return; }
+    }
     lsSet(`gc.settings.${gameId}`, st.settings);
     try {
       const body = { game_id: gameId, mode: st.mode, player_ids: st.selected, settings: st.settings };

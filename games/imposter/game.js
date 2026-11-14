@@ -80,7 +80,11 @@ function standingsList(deltas = {}) {
 }
 
 function save() {
-  return GC.saveProgress({ ...st }).catch(() => toast("Couldn't save progress (offline?)", "bad"));
+  const partial = st.round > 0 ? {
+    scores: players.map((p) => ({ player_id: p.player_id, score: st.scores[p.player_id] || 0 })),
+    details: { summary: `${st.round} round${st.round === 1 ? "" : "s"} played`, rounds: st.history },
+  } : null;
+  return GC.saveProgress({ ...st }, partial).catch(() => toast("Couldn't save progress (offline?)", "bad"));
 }
 
 async function menu() {
@@ -311,7 +315,7 @@ function finalScreen() {
 async function boot() {
   mount(root, h("div", { class: "screen centered" }, h("div", { class: "spinner" })));
   try {
-    session = await GC.getSession();
+    session = await GC.start();
   } catch (e) {
     mount(root, h("div", { class: "screen centered" }, h("h2", null, "😵 " + e.message), h("a", { class: "btn", href: "/" }, "Home")));
     return;
