@@ -56,6 +56,6 @@ Open http://localhost:8080, then http://localhost:8080/admin to add people.
 | `SECURE_COOKIES` | `false` | Set `true` when served over HTTPS |
 | `SECRET_KEY` | *(auto-generated in DATA_DIR)* | Cookie signing key |
 | `PORT` | `8080` | Listen port inside the container |
-| `SESSION_IDLE_HOURS` | `2` | Unfinished games nobody has open for this long are auto-finished (scores so far) or abandoned |
+| `SESSION_IDLE_HOURS` | `2` | Default for "close idle games after" (Admin → Settings → Live games overrides it) |
 
 Site name, timezone, night cutoff and scoring can also be changed later in **Admin → Settings**.

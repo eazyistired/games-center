@@ -9,7 +9,7 @@
 (function () {
   const params = new URLSearchParams(location.search);
   const sessionId = params.get("session");
-  const HEARTBEAT_MS = 5000;
+  let HEARTBEAT = 5000; // updated from the server's "quiet after" setting
 
   // ---- device id (same storage key as /static/device.js)
   function deviceId() {
@@ -116,7 +116,7 @@
 
   function startHeartbeat() {
     clearInterval(live.timer);
-    live.timer = setInterval(beat, HEARTBEAT_MS);
+    live.timer = setInterval(beat, HEARTBEAT);
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") beat(); });
   }
 
@@ -128,7 +128,7 @@
       const deviceBeat = () => call("/api/devices/heartbeat", "POST", {})
         .then((r) => (r.requests || []).forEach(askApproval)).catch(() => {});
       deviceBeat();
-      const beatTimer = setInterval(deviceBeat, HEARTBEAT_MS);
+      const beatTimer = setInterval(deviceBeat, HEARTBEAT);
       const close = () => box?.remove();
       const home = () => { location.href = "/"; };
       const ctrl = session.controller;
@@ -147,7 +147,7 @@
         box = overlay(
           el("div", { class: "spinner" }),
           el("h2", {}, "Waiting for permission…"),
-          el("p", { class: "muted" }, `Asked ${names}. If that phone is locked or away, it's allowed automatically within ~30 s.`),
+          el("p", { class: "muted" }, `Asked ${names}. If that phone is locked or away, it's allowed automatically within ~${session.quiet_seconds || 30} s.`),
           el("div", { class: "gk-overlay-actions" }, btn("Cancel", "", async () => { await call(`/api/sessions/${sessionId}/takeover`, "DELETE").catch(() => {}); intro(); })));
       };
       const denied = () => {
@@ -209,6 +209,7 @@
         else throw e;
       }
       live.version = s.version;
+      if (s.heartbeat_ms) HEARTBEAT = s.heartbeat_ms;
       startHeartbeat();
       return s;
     },

@@ -394,7 +394,11 @@ def device_heartbeat(db: DB, device: DeviceId, body: HeartbeatIn | None = None) 
     if not device:
         raise bad_request("Missing X-Device-Id header")
     live.touch_device(db, device, body.label if body else None)
-    out = {"device": device_out(db, device), "requests": live.pending_for(db, device)}
+    out = {
+        "device": device_out(db, device),
+        "requests": live.pending_for(db, device),
+        "heartbeat_ms": live.heartbeat_ms(),
+    }
     db.commit()
     return out
 

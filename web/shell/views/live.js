@@ -70,7 +70,7 @@ export function startLive() {
   beat().then(() => {
     if (!me.player && !ls.get("gc.meAsked")) chooseMe({ firstTime: true }).catch(() => {});
   });
-  setInterval(beat, 15000);
+  setInterval(beat, 10000);
   document.addEventListener("visibilitychange", beat);
 }
 
