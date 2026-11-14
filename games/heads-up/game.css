@@ -53,3 +53,10 @@ body { touch-action: manipulation; user-select: none; -webkit-user-select: none;
 .tval { font-family: ui-monospace, monospace; color: var(--muted); font-size: .9rem; }
 .logo { font-weight: 900; font-size: 2rem; letter-spacing: -.04em; line-height: 1; }
 .logo span { background: var(--accent); color: var(--on-accent); padding: 1px 9px; border-radius: 8px; font-size: .6em; vertical-align: middle; letter-spacing: 0; }
+
+/* pause */
+.play .pause-btn { position: absolute; z-index: 5; bottom: calc(14px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--border); background: rgba(34, 29, 25, .85); color: var(--text); font-size: 1.3rem; cursor: pointer; }
+.pause-overlay { position: absolute; inset: 0; z-index: 10; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 16px; text-align: center; }
+.pause-title { font-size: min(14vw, 18vh); font-weight: 900; color: var(--accent); line-height: 1; }
+.pause-actions { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
+.pause-actions .btn { min-width: 220px; }

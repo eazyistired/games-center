@@ -289,7 +289,9 @@ function countdownScreen(turn) {
 
 function playScreen(turn) {
   const seconds = Number(session.settings.round_seconds) || 60;
-  const endAt = Date.now() + seconds * 1000;
+  let endAt = Date.now() + seconds * 1000;
+  let paused = false;
+  let remaining = 0;
   const shown = []; // [{word, result}]
   let current = nextWord();
   let busy = false;
@@ -310,12 +312,38 @@ function playScreen(turn) {
       h("button", { class: "btn", onclick: () => act("pass") }, "⬆ Pass"),
       h("button", { class: "btn good", onclick: () => act("correct") }, "Got it ⬇")),
     !tilt && h("div", { class: "tap-hint" }, h("span", null, "◀ tap: pass"), h("span", null, "tap: got it ▶")),
+    h("button", { class: "pause-btn", "aria-label": "Pause", onclick: (e) => { e.stopPropagation(); pause(); } }, "⏸"),
     h("div", { class: "progress" }, progress));
   mount(root, play);
   fit(wordEl);
 
+  // ---- pause menu: resume, or end this player's turn early (the game continues)
+  function pause() {
+    if (finished || paused) return;
+    paused = true;
+    armed = false;
+    remaining = Math.max(0, endAt - Date.now());
+    const secsLeft = Math.ceil(remaining / 1000);
+    play.append(h("div", { class: "pause-overlay", onclick: (e) => e.stopPropagation() },
+      h("div", { class: "pause-title" }, "Paused"),
+      h("div", { class: "muted" }, `${pName(turn.player_id)} · ${secsLeft}s left · ${shown.filter((x) => x.result === "correct").length} correct`),
+      h("div", { class: "pause-actions" },
+        h("button", { class: "btn primary xl", onclick: resume }, "▶ Resume"),
+        h("button", { class: "btn xl", onclick: () => endTurn("Turn ended") }, "⏹ End turn now"))));
+  }
+  function resume() {
+    if (!paused) return;
+    play.querySelector(".pause-overlay")?.remove();
+    paused = false;
+    endAt = Date.now() + remaining;
+    lastTick = null;
+    requestAnimationFrame(frame);
+  }
+  const onHidden = () => { if (document.visibilityState === "hidden") pause(); };
+  document.addEventListener("visibilitychange", onHidden);
+
   function act(result) {
-    if (busy || finished) return;
+    if (busy || finished || paused) return;
     busy = true;
     armed = false;
     shown.push({ word: current, result });
@@ -336,33 +364,37 @@ function playScreen(turn) {
   }
 
   motion.listener = (face) => {
-    if (!session.settings.tilt) return;
+    if (!session.settings.tilt || paused) return;
     if (!armed) { if (Math.abs(face) < NEUTRAL && !busy) armed = true; return; }
     if (face < DOWN) act("correct");
     else if (face > UP) act("pass");
   };
 
   function frame() {
-    if (finished) return;
+    if (finished || paused) return;
     const left = Math.max(0, endAt - Date.now());
     const secs = Math.ceil(left / 1000);
     timerEl.textContent = secs;
     timerEl.classList.toggle("low", secs <= 10);
     progress.style.width = `${(left / (seconds * 1000)) * 100}%`;
     if (secs <= 5 && secs !== lastTick && secs > 0) { lastTick = secs; sfx.tick(); }
-    if (left <= 0) return timeUp();
+    if (left <= 0) return endTurn("Time's up!");
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
-  function timeUp() {
+  function endTurn(label) {
+    if (finished) return;
     finished = true;
+    paused = false;
     motion.listener = null;
+    document.removeEventListener("visibilitychange", onHidden);
+    // the word on screen when the turn ends is reviewable (it may have been guessed at the buzzer)
     if (!busy) shown.push({ word: current, result: "pass", timeout: true });
     sfx.end();
     play.className = "play timeup";
-    mount(play, h("div", { class: "feedback" }, "Time's up!"));
-    setTimeout(() => reviewScreen(turn, shown), 1300);
+    mount(play, h("div", { class: "feedback" }, label));
+    setTimeout(() => reviewScreen(turn, shown), 1100);
   }
 }
 
@@ -372,7 +404,7 @@ function reviewScreen(turn, shown) {
   const draw = () => {
     total.textContent = shown.filter((s) => s.result === "correct").length;
     mount(list, shown.length ? shown.map((s) => h("div", { class: `review-item ${s.result}`, onclick: () => { s.result = s.result === "correct" ? "pass" : "correct"; draw(); } },
-      h("span", { class: "t" }, s.word.text, s.timeout && h("span", { class: "tiny muted" }, "  ⏱ time ran out")),
+      h("span", { class: "t" }, s.word.text, s.timeout && h("span", { class: "tiny muted" }, "  ⏱ on screen at the end")),
       h("span", { class: "mark" }, s.result === "correct" ? "✓" : "✗"))) : h("p", { class: "muted center" }, "No words this turn."));
   };
   draw();

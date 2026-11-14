@@ -69,6 +69,8 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Review screen to fix misread tilts; last word when time runs out is reviewable
 - [x] No repeated words within a night; progress saved after every turn (refresh-safe)
 - [x] Finish early / quit from the menu
+- [x] ⏸ Pause during a turn (word hidden, timer frozen; auto-pause when the phone locks) with
+      **End turn now** → that player's review, game continues
 - [x] 9 built-in decks (980 words, incl. IMDb Top 250) + custom decks from admin
 - [x] Long words/titles auto-shrink to fit the screen
 
