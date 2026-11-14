@@ -83,21 +83,33 @@
   }
 
   function askApproval(req) {
-    if (live.asked.has(req.id)) return;
-    live.asked.add(req.id);
-    const text = req.reason === "identity"
+    const key = req.decide_url || `takeover:${req.id}`;
+    if (live.asked.has(key)) return;
+    live.asked.add(key);
+    let title = "Take over this game?";
+    let text = req.reason === "identity"
       ? `A phone that says it's ${who(req.requester)} wants to take over ${req.game.emoji} ${req.game.name}. Was that you?`
       : `${who(req.requester)}'s phone wants to take over ${req.game.emoji} ${req.game.name}.`;
+    let note = "If you allow it, the game continues on that phone from the start of the round.";
+    if (req.reason === "name") {
+      title = `Use ${who(req.player)} on another phone?`;
+      text = `Another phone wants to be ${req.player.name}. Was that you (e.g. a new phone)?`;
+      note = "If you allow it, this phone forgets the name (your seat moves to that phone).";
+    } else if (req.host) {
+      title = "Hand over the host role?";
+      text = `${who(req.requester)} wants to become the 👑 host of ${req.game.emoji} ${req.game.name}.`;
+      note = "You keep playing; they get the host controls.";
+    }
     const back = el("div", { class: "modal-back", style: "z-index:95" });
     const decide = async (approve) => {
       back.remove();
-      await call(`/api/takeover/${req.id}/decide`, "POST", { approve }).catch(() => {});
+      await call(req.decide_url || `/api/takeover/${req.id}/decide`, "POST", { approve }).catch(() => {});
       if (approve) beat();
     };
     back.append(el("div", { class: "modal" },
-      el("h2", {}, "Take over this game?"),
+      el("h2", {}, title),
       el("p", { class: "muted" }, text),
-      el("p", { class: "small muted" }, "If you allow it, the game continues on that phone from the start of the round."),
+      el("p", { class: "small muted" }, note),
       el("div", { class: "actions" }, btn("Deny", "ghost", () => decide(false)), btn("Allow", "primary", () => decide(true)))));
     document.body.append(back);
   }
@@ -296,6 +308,7 @@
             return;
           }
           if (s.status !== "active" && s.status !== "lobby") { closed = true; ws.close(); } // game over: stop listening
+          (s.requests || []).forEach(askApproval); // e.g. someone asks to become host
           onUpdate(s);
         };
         ws.onclose = () => { clearInterval(ping); if (!closed) setTimeout(open, Math.min(500 * 2 ** ++retry, 15000)); };
@@ -305,6 +318,26 @@
       });
       open();
       return { close() { closed = true; clearInterval(ping); ws?.close(); } };
+    },
+
+    /** Multi-phone: hand the 👑 host role to another joined player. */
+    async makeHost(playerId) {
+      requireSession();
+      return call(`/api/sessions/${sessionId}/host`, "POST", { player_id: playerId });
+    },
+
+    /** Multi-phone: ask to become host. Resolves "granted" | "denied" | "timeout". */
+    async becomeHost() {
+      requireSession();
+      const r = await call(`/api/sessions/${sessionId}/takeover`, "POST");
+      if (r.status === "granted") return "granted";
+      for (let i = 0; i < 40; i++) {
+        await new Promise((ok) => setTimeout(ok, 2000));
+        const st = await call(`/api/sessions/${sessionId}/takeover`).catch(() => ({ status: "pending" }));
+        if (st.status === "granted" || st.status === "denied") return st.status;
+        if (st.status === "none") return "timeout";
+      }
+      return "timeout";
     },
 
     /** Multi-phone: send an action to the server engine. Resolves with the updated session. */

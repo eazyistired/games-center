@@ -234,5 +234,21 @@ class SessionWord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class IdentityRequest(Base):
+    """A phone asking to use a name (player) that another phone holds; that phone must allow it."""
+
+    __tablename__ = "identity_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    requester_device_id: Mapped[str] = mapped_column(String(64), index=True)
+    owner_device_id: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(
+        String(12), default="pending"
+    )  # pending|approved|denied|cancelled
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
+
+
 # sessions that are not over yet (shown under "Live now")
 LIVE_STATUSES = ("active", "lobby", "collecting")

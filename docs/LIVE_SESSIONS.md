@@ -13,11 +13,12 @@
 |---|---|
 | Phones in multi-phone mode | Everyone needs a phone |
 | Lineup | Host picks the lineup; people claim themselves ("I'm Ana") |
-| Identity | No login. A phone remembers who it is (switchable). |
+| Identity | No login. A phone remembers who it is (switchable). **One phone per name**: another phone needs the owner phone's OK while that phone was used within `name_hold_minutes` (default 30, Admin → Settings); afterwards the name frees up by itself. 3 denials → 5 min cooldown. Seats in multi-phone games move along with the name. Admin → Players → Release from phone. |
 | Imposter on phones | Secret voting on each phone |
 | Takeover | Anyone can take over; resumes at the start of the round/turn |
 | Takeover confirmation | If the phone in control is active, it must approve. If the person taking over is active as the same player on another phone, that phone must approve too. A locked/quiet phone (no heartbeat for 30 s) counts as approved. |
 | Spectating | Anyone can watch any live session (phase 2) |
+| Host role (multi-phone) | The host hands the 👑 to any joined player (no accept step). A player can ask to become host (the host approves if active, otherwise immediate). A lobby whose host phone leaves (offline + quiet) gets the next joined player as host. |
 | Idle sessions | Nobody in control for 2 h: auto-finished with the scores so far if at least one round was completed, otherwise abandoned |
 | Multi-phone rules | Server-side Python engines (secrets never reach the wrong phone, not even the host's) |
 | TV view | Planned (spectator/board view) |

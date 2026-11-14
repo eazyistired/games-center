@@ -128,7 +128,8 @@ views.players = async () => {
   const archived = players.filter((p) => !p.active);
   const row = (p) => h("tr", { class: p.active ? "" : "dim" },
     h("td", { style: { fontSize: "1.5rem", width: "2.5rem" } }, p.emoji),
-    h("td", null, h("b", null, p.name), h("div", { class: "tiny muted" }, p.last_played ? `last played ${ago(p.last_played)}` : "never played")),
+    h("td", null, h("b", null, p.name), h("div", { class: "tiny muted" }, p.last_played ? `last played ${ago(p.last_played)}` : "never played",
+      p.phone_seen ? ` · 📱 phone used ${ago(p.phone_seen)}` : "")),
     h("td", { class: "right" }, p.sessions),
     h("td", { class: "right nowrap" },
       h("button", { class: "btn small", onclick: async () => { if (await playerDialog(p)) refresh(); } }, "Edit"), " ",
@@ -149,12 +150,16 @@ async function playerMenu(p, players) {
   const r = await modal(`${p.emoji} ${p.name}`, h("div", { class: "stack" },
     h("p", { class: "muted small" }, "Archived players are hidden from the people pool but keep their history. Merging moves all of this player's games onto another player and deletes this one."),
     sel), [
+    p.phone_seen && { label: "📱 Release from phone", value: "release" },
     p.active ? { label: "Archive", value: "archive" } : { label: "Restore", value: "restore" },
     { label: "Merge", value: "merge" },
     p.sessions === 0 && { label: "Delete", class: "danger", value: "delete" },
     { label: "Close", class: "ghost", value: null },
   ].filter(Boolean));
-  if (r === "archive" || r === "restore") {
+  if (r === "release") {
+    await guarded(() => api(`/api/admin/players/${p.id}/release`, { method: "POST" }));
+    toast(`${p.name} can now be picked on any phone`, "good");
+  } else if (r === "archive" || r === "restore") {
     await guarded(() => api(`/api/admin/players/${p.id}`, { method: "PUT", body: { active: r === "restore" } }));
     toast(r === "archive" ? "Archived" : "Restored", "good");
   } else if (r === "merge") {
@@ -542,6 +547,9 @@ views.settings = async () => {
       h("label", { class: "field" }, "Phone counts as quiet after (seconds)",
         h("span", { class: "help" }, "No check-in for this long → the game shows ⏸ Paused and another phone can take it over without asking. Lower = faster takeovers; higher = fewer false \"quiet\" moments when a phone briefly locks. Phones check in every few seconds automatically."),
         h("input", { type: "number", min: 10, max: 600, value: v.quiet_seconds, oninput: (e) => { v.quiet_seconds = Number(e.target.value); } })),
+      h("label", { class: "field" }, "A phone keeps its name for (minutes)",
+        h("span", { class: "help" }, "One phone per name. Another phone needs the owner's OK to use a name while the owner's phone was used within this time; after that the name frees up by itself. 3 denials = 5 min cooldown."),
+        h("input", { type: "number", min: 1, max: 1440, value: v.name_hold_minutes, oninput: (e) => { v.name_hold_minutes = Number(e.target.value); } })),
       h("label", { class: "field" }, "Close idle games after (hours)",
         h("span", { class: "help" }, "Unfinished games nobody has open for this long are finished with the scores so far (or discarded if no round was completed)."),
         h("input", { type: "number", min: 0.25, max: 48, step: 0.25, value: v.idle_hours, oninput: (e) => { v.idle_hours = Number(e.target.value); } }))),

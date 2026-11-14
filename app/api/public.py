@@ -12,7 +12,7 @@ from .. import __version__
 from ..config import get_settings
 from ..models import LIVE_STATUSES, Crew, Deck, Game, GameNight, GameSession, Player, utcnow
 from ..realtime import hub
-from ..services import certs, collect, live, multi
+from ..services import certs, collect, identity, live, multi
 from ..services import leaderboards as lb
 from ..services.decks import deck_out, words_for_session
 from ..services.nights import current_night_date
@@ -64,11 +64,12 @@ def player_dict(p: Player) -> dict[str, Any]:
 
 
 @router.get("/players")
-def list_players(db: DB, include_archived: bool = False) -> list[dict[str, Any]]:
+def list_players(db: DB, device: DeviceId, include_archived: bool = False) -> list[dict[str, Any]]:
     q = select(Player).order_by(func.lower(Player.name))
     if not include_archived:
         q = q.where(Player.active)
-    return [player_dict(p) for p in db.scalars(q)]
+    in_use = identity.names_in_use(db, exclude=device)  # on another phone, used recently
+    return [player_dict(p) | {"in_use": p.id in in_use} for p in db.scalars(q)]
 
 
 @router.get("/players/{player_id}/profile")
@@ -345,6 +346,8 @@ def session_heartbeat(db: DB, session_id: int, device: DeviceId) -> dict[str, An
 def takeover(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
     live.touch_device(db, device)
+    if s.device_mode == "multi" and multi.seat_of(s, device) is None:
+        raise HTTPException(403, {"message": "Join the game first"})
     try:
         out = live.request_takeover(db, s, device)
     except live.LiveError as exc:
@@ -428,6 +431,18 @@ def join_seat(db: DB, session_id: int, body: SeatIn, device: DeviceId) -> dict[s
 @router.delete("/sessions/{session_id}/seat/{player_id}")
 def leave_seat(db: DB, session_id: int, player_id: int, device: DeviceId) -> dict[str, Any]:
     return _multi(db, session_id, device, lambda s: multi.leave_seat(db, s, device, player_id))
+
+
+class HostIn(BaseModel):
+    player_id: int
+
+
+@router.post("/sessions/{session_id}/host")
+def hand_over_host(db: DB, session_id: int, body: HostIn, device: DeviceId) -> dict[str, Any]:
+    """Multi-phone: the host gives the 👑 to another joined player."""
+    return _multi(
+        db, session_id, device, lambda s: multi.transfer_host(db, s, device, body.player_id)
+    )
 
 
 @router.post("/sessions/{session_id}/start")
@@ -527,18 +542,69 @@ class WhoAmI(BaseModel):
     player_id: int | None
 
 
+def identity_error(exc: identity.IdentityError) -> HTTPException:
+    return HTTPException(exc.status, {"message": str(exc), **exc.info})
+
+
 @router.put("/devices/me")
 def set_identity(db: DB, body: WhoAmI, device: DeviceId) -> dict[str, Any]:
+    """ "This phone is Ana". One phone per name: if Ana is active on another phone, that phone is
+    asked first (status "pending" + request_id to poll)."""
     if not device:
         raise bad_request("Missing X-Device-Id header")
-    dev = live.touch_device(db, device)
-    if body.player_id is not None:
-        p = db.get(Player, body.player_id)
-        if p is None or not p.active:
-            raise bad_request("Unknown player")
-    dev.player_id = body.player_id
+    try:
+        out = identity.request_name(db, device, body.player_id)
+    except identity.IdentityError as exc:
+        db.rollback()
+        raise identity_error(exc) from exc
     db.commit()
-    return device_out(db, device)
+    if out["status"] == "granted":
+        notify_seats(db, device)
+    return device_out(db, device) | out
+
+
+def notify_seats(db: DB, device: str | None) -> None:
+    """A name moved: refresh the live games where this phone now holds a seat."""
+    from ..models import SessionParticipant
+
+    for sid in set(
+        db.scalars(
+            select(SessionParticipant.session_id).where(SessionParticipant.device_id == device)
+        )
+    ):
+        hub.notify(sid)
+
+
+@router.get("/identity-requests/{request_id}")
+def identity_request_status(db: DB, request_id: int, device: DeviceId) -> dict[str, Any]:
+    try:
+        out = identity.request_status(db, request_id, device)
+    except identity.IdentityError as exc:
+        raise identity_error(exc) from exc
+    db.commit()
+    if out["status"] == "granted":
+        notify_seats(db, device)
+    return out | {"device": device_out(db, device)}
+
+
+@router.delete("/identity-requests/{request_id}")
+def identity_request_cancel(db: DB, request_id: int, device: DeviceId) -> dict[str, bool]:
+    identity.cancel(db, request_id, device)
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/identity-requests/{request_id}/decide")
+def identity_request_decide(
+    db: DB, request_id: int, body: DecisionIn, device: DeviceId
+) -> dict[str, bool]:
+    try:
+        identity.decide(db, request_id, device, body.approve)
+    except identity.IdentityError as exc:
+        raise identity_error(exc) from exc
+    db.commit()
+    notify_seats(db, device)
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------- home certificate (install on phones)

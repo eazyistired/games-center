@@ -25,43 +25,110 @@ export async function chooseMe({ firstTime = false } = {}) {
   let picked = me.player?.id ?? null;
   const grid = h("div", { class: "chips" });
   const draw = () => mount(grid, players.map((p) => h("span", { class: `chip ${picked === p.id ? "on" : ""}`, onclick: () => { picked = p.id; draw(); } },
-    h("span", { class: "e" }, p.emoji), p.name)));
+    h("span", { class: "e" }, p.emoji), p.name, p.in_use ? h("span", { class: "tiny muted", title: "Used on another phone" }, " 📱") : null)));
   draw();
   const r = await modal(firstTime ? "👋 Who are you?" : "Who's using this phone?", h("div", { class: "stack" },
-    h("p", { class: "muted small", style: { margin: 0 } }, "This phone will remember it, so you can jump into games you're in. No login, and you can change it any time."),
+    h("p", { class: "muted small", style: { margin: 0 } }, "This phone will remember it, so you can jump into games you're in. One phone per name: 📱 = already used on another phone (that phone will be asked)."),
     grid), [
     { label: firstTime ? "Just browsing" : "Nobody / clear", class: "ghost", value: "none" },
     { label: "That's me", class: "primary", onclick: () => (picked == null ? (toast("Tap your name first", "bad"), false) : "pick") },
   ]);
   ls.set("gc.meAsked", "1");
-  if (r === "pick" || r === "none") {
-    const out = await api("/api/devices/me", { method: "PUT", body: { player_id: r === "pick" ? picked : null } });
+  if (r === "pick") return claimName(picked);
+  if (r === "none") {
+    const out = await api("/api/devices/me", { method: "PUT", body: { player_id: null } });
     setMe(out.player);
-    toast(out.player ? `Hi ${out.player.emoji} ${out.player.name}!` : "Okay, just browsing", "good");
+    toast("Okay, just browsing", "good");
   }
+  return false;
+}
+
+/** Make this phone "player_id". If another active phone has that name, wait for it to allow. */
+export async function claimName(playerId) {
+  let out;
+  try {
+    out = await api("/api/devices/me", { method: "PUT", body: { player_id: playerId } });
+  } catch (e) { toast(e.message, "bad"); return false; }
+  if (out.status === "granted") {
+    setMe(out.player);
+    toast(`Hi ${out.player.emoji} ${out.player.name}!`, "good");
+    return true;
+  }
+  return waitForName(out);
+}
+
+function waitForName(first) {
+  return new Promise((resolve) => {
+    let done = false;
+    const p = first.player;
+    const mins = Math.max(1, Math.round((first.owner_seen_seconds_ago || 0) / 60));
+    const finish = (ok, msg, kind) => {
+      if (done) return;
+      done = true;
+      [...document.querySelectorAll(".modal-back")].pop()?.remove();
+      if (msg) toast(msg, kind);
+      resolve(ok);
+    };
+    modal(`Asking to use ${p.emoji} ${p.name}…`, h("div", { class: "stack" },
+      h("div", { class: "spinner", style: { margin: ".5rem auto" } }),
+      h("p", { class: "muted", style: { margin: 0 } }, `${p.name} is used on another phone (last used ${first.owner_seen_seconds_ago < 90 ? "just now" : `${mins} min ago`}). That phone has to allow it.`),
+      h("p", { class: "tiny muted", style: { margin: 0 } }, `If that phone isn't used for ${first.hold_minutes} min, the name frees up by itself. The host can also release it in Admin → Players.`)),
+      [{ label: "Cancel", class: "ghost", value: "cancel" }]).then(() => {
+      if (!done) { done = true; api(`/api/identity-requests/${first.request_id}`, { method: "DELETE" }).catch(() => {}); resolve(false); }
+    });
+    const poll = async () => {
+      if (done) return;
+      try {
+        const st = await api(`/api/identity-requests/${first.request_id}`);
+        if (st.status === "granted") { setMe(st.device.player); return finish(true, `Hi ${p.emoji} ${p.name}!`, "good"); }
+        if (st.status === "denied") {
+          return finish(false, st.cooldown_seconds
+            ? `${p.name}'s phone said no 3 times: try again in ${Math.ceil(st.cooldown_seconds / 60)} min`
+            : `${p.name}'s phone said no (${st.tries_left} ${st.tries_left === 1 ? "try" : "tries"} left)`, "bad");
+        }
+        if (st.status !== "pending") return finish(false);
+      } catch { /* retry */ }
+      setTimeout(poll, 2000);
+    };
+    setTimeout(poll, 2000);
+  });
 }
 
 // ---------------------------------------------------------------- heartbeat & approvals
 const answered = new Set();
 
-async function answer(req) {
-  if (answered.has(req.id)) return;
-  answered.add(req.id);
+/** Approve/deny a request this phone owes: a takeover, the host role, or this phone's name. */
+export async function answer(req) {
+  const key = req.decide_url || `takeover:${req.id}`;
+  if (answered.has(key)) return;
+  answered.add(key);
   const who = req.requester ? `${req.requester.emoji} ${req.requester.name}` : "Someone";
-  const text = req.reason === "identity"
-    ? `A phone that says it's ${who} wants to take over ${req.game.emoji} ${req.game.name}. Was that you?`
-    : `${who}'s phone wants to take over ${req.game.emoji} ${req.game.name}, which runs on this phone.`;
-  const allow = await modal("Take over this game?", h("p", { class: "muted" }, text), [
+  let title = "Take over this game?";
+  let text;
+  if (req.reason === "name") {
+    title = `Use ${req.player.emoji} ${req.player.name} on another phone?`;
+    text = `Another phone wants to be ${req.player.name}. Was that you (e.g. a new phone)? If you allow it, this phone forgets the name.`;
+  } else if (req.host) {
+    title = "Hand over the host role?";
+    text = `${who} wants to become the 👑 host of ${req.game.emoji} ${req.game.name}.`;
+  } else if (req.reason === "identity") {
+    text = `A phone that says it's ${who} wants to take over ${req.game.emoji} ${req.game.name}. Was that you?`;
+  } else {
+    text = `${who}'s phone wants to take over ${req.game.emoji} ${req.game.name}, which runs on this phone.`;
+  }
+  const allow = await modal(title, h("p", { class: "muted" }, text), [
     { label: "Deny", class: "ghost", value: false },
     { label: "Allow", class: "primary", value: true },
   ]);
-  await api(`/api/takeover/${req.id}/decide`, { method: "POST", body: { approve: !!allow } }).catch(() => {});
+  await api(req.decide_url || `/api/takeover/${req.id}/decide`, { method: "POST", body: { approve: !!allow } }).catch(() => {});
+  if (allow) beat();
 }
 
 async function beat() {
   if (document.visibilityState !== "visible") return;
   try {
     const r = await api("/api/devices/heartbeat", { method: "POST", body: { label: navigator.userAgent.slice(0, 100) } });
+    if (me.loaded && me.player && !r.device.player) toast(`📱 ${me.player.emoji} ${me.player.name} is now used on another phone`, "bad");
     if (!me.loaded || me.player?.id !== r.device.player?.id) setMe(r.device.player);
     r.requests.forEach(answer);
   } catch { /* offline */ }
@@ -207,7 +274,9 @@ function lobbyBlock(s, redraw) {
       const out = await api(`/api/sessions/${s.id}/seat`, { method: "POST", body: { player_id: playerId, force } });
       redraw(out);
     } catch (e) {
-      if (e.info?.seat_taken && L.is_host) {
+      if (e.info?.name_taken) {
+        if (await claimName(playerId)) return seatAction(playerId); // the name (and seat) moves here
+      } else if (e.info?.seat_taken && L.is_host) {
         const ok = await modal("Seat in use", h("p", { class: "muted" }, `${e.message}. Move them to this phone anyway?`), [
           { label: "Cancel", class: "ghost", value: false }, { label: "Move", class: "danger", value: true }]);
         if (ok) return seatAction(playerId, true);
@@ -227,6 +296,7 @@ function lobbyBlock(s, redraw) {
     x.joined ? h("span", { class: `badge ${x.online || x.mine ? "good" : "warn"}` }, x.mine ? "You" : "✓") : null,
     !x.joined && !L.my_seat && (!knownInLineup || x.player_id === me.player.id)
       ? h("button", { class: "btn small primary", onclick: () => seatAction(x.player_id) }, "That's me") : null,
+    L.is_host && x.joined && !x.mine ? h("button", { class: "btn small ghost icon-btn", title: `Make ${x.name} the host`, onclick: () => makeHost(s, x, redraw) }, "👑") : null,
     L.is_host && x.joined && !x.mine ? h("button", { class: "btn small ghost icon-btn", title: "Remove", onclick: () => remove(x.player_id) }, "✕") : null);
   const joined = L.seats.filter((x) => x.joined).length;
   return h("div", { class: "stack" },
@@ -240,7 +310,32 @@ function lobbyBlock(s, redraw) {
           try { const out = await api(`/api/sessions/${s.id}/start`, { method: "POST" }); location.href = out.game.url; } catch (e) { toast(e.message, "bad"); }
         } }, !L.all_joined ? `Waiting for ${L.seats.length - joined} more…` : s.collect && !s.collect.ready ? `Need ${s.collect.min_total - s.collect.total} more words…` : "▶ Start the game")
       : L.my_seat ? h("div", { class: "card center small" }, "✅ You're in! The host will start the game when everyone has joined.") : null,
-    L.is_host ? h("p", { class: "tiny muted center", style: { margin: 0 } }, "Everyone opens the site (📲 Invite has the QR code), finds this game under Live now and taps their name.") : null);
+    L.is_host ? h("p", { class: "tiny muted center", style: { margin: 0 } }, "Everyone opens the site (📲 Invite has the QR code), finds this game under Live now and taps their name. 👑 hands over the host role.") : null,
+    !L.is_host && L.my_seat ? h("button", { class: "btn small ghost", style: { alignSelf: "center" }, onclick: () => becomeHost(s, redraw) }, "👑 Become host") : null);
+}
+
+export async function makeHost(s, seat, redraw) {
+  try {
+    const out = await api(`/api/sessions/${s.id}/host`, { method: "POST", body: { player_id: seat.player_id } });
+    toast(`👑 ${seat.emoji} ${seat.name} is now the host`, "good");
+    redraw?.(out);
+  } catch (e) { toast(e.message, "bad"); }
+}
+
+/** Ask to become host (the current host is asked if their phone is active). */
+export async function becomeHost(s, redraw) {
+  let r;
+  try { r = await api(`/api/sessions/${s.id}/takeover`, { method: "POST" }); } catch (e) { return toast(e.message, "bad"); }
+  const done = async (msg, kind) => { toast(msg, kind); redraw?.(await api(`/api/sessions/${s.id}`)); };
+  if (r.status === "granted") return done("👑 You're now the host", "good");
+  toast("Asked the host's phone…");
+  for (let i = 0; i < 40; i++) {
+    await new Promise((ok) => setTimeout(ok, 2000));
+    const st = await api(`/api/sessions/${s.id}/takeover`).catch(() => ({ status: "pending" }));
+    if (st.status === "granted") return done("👑 You're now the host", "good");
+    if (st.status === "denied") return toast("The host said no", "bad");
+    if (st.status === "none") return;
+  }
 }
 
 export async function sessionView({ params, app }) {
@@ -250,9 +345,13 @@ export async function sessionView({ params, app }) {
   // kept across live redraws so a half-typed word isn't lost when others add theirs
   const wordInput = h("input", { placeholder: "A word or name…", maxlength: 120, autocomplete: "off", enterkeyhint: "done" });
 
+  let wasHost = s.lobby?.is_host;
   function draw(next) {
     if (next) s = next;
     if (s.status === "finished") { go(`/results/${s.id}`); return; }
+    (s.requests || []).forEach(answer);
+    if (s.lobby && s.lobby.is_host && wasHost === false) toast("👑 You're now the host", "good");
+    if (s.lobby) wasHost = s.lobby.is_host;
     const mine = isMine(s);
     const multi = s.device_mode === "multi";
     const blocks = [];
