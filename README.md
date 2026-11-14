@@ -42,6 +42,7 @@ Open http://localhost:8080, then http://localhost:8080/admin to add people.
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md): project layout, tests, migrations
 - [docs/IDEAS.md](docs/IDEAS.md): future fun features & games
 - [docs/LIVE_SESSIONS.md](docs/LIVE_SESSIONS.md): live sessions, takeover & multi-phone plan
+- [docs/HOME_SERVER.md](docs/HOME_SERVER.md): the home server setup + a starter sheet for new apps
 
 ## Configuration (environment variables)
 
