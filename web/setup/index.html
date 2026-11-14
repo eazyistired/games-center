@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14110f">
+  <title>Set up this phone</title>
+  <link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .page { padding-bottom: 40px; }
+    .steps { counter-reset: s; display: flex; flex-direction: column; gap: .6rem; margin: 0; padding: 0; list-style: none; }
+    .steps li { counter-increment: s; display: flex; gap: .75rem; align-items: flex-start; }
+    .steps li::before { content: counter(s); flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 900; display: grid; place-items: center; }
+    .path { font-weight: 700; color: var(--text); }
+    .fp { font-family: ui-monospace, monospace; font-size: .72rem; word-break: break-all; color: var(--muted); }
+    .tabs { margin-bottom: .5rem; }
+  </style>
+</head>
+<body>
+  <main class="page stack" id="app"><div class="spinner"></div></main>
+  <script type="module">
+    import { h, mount, seg } from "/static/ui.js";
+    const app = document.getElementById("app");
+    const ua = navigator.userAgent;
+    const detected = /iPhone|iPad|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document) ? "ios" : /Android/.test(ua) ? "android" : "computer";
+
+    const ca = await fetch("/api/ca").then((r) => r.json()).catch(() => ({ available: false }));
+    const host = location.hostname;
+    const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(host);
+    const appUrl = ca.app_url || (isIp ? null : `https://${host}`);
+    const name = ca.name || "the home certificate";
+    const p = (t) => h("span", { class: "path" }, t);
+
+    const STEPS = {
+      ios: [
+        h("div", null, "Open this page in ", p("Safari"), " (Chrome on iPhone can't install certificates)."),
+        h("div", null, "Tap ", p("Install certificate"), " below, then ", p("Allow"), " (\"configuration profile\")."),
+        h("div", null, "Open ", p("Settings"), ": tap ", p("Profile Downloaded"), " near the top (or ", p("General → VPN & Device Management"), "), then ", p("Install"), " and enter your passcode."),
+        h("div", null, p("Settings → General → About → Certificate Trust Settings"), " and switch on ", p(name), ". This step is easy to miss!"),
+        h("div", null, "Come back here and tap ", p("Open the games"), "."),
+      ],
+      android: [
+        h("div", null, "Tap ", p("Install certificate"), " below: the file ", p("home-ca.crt"), " downloads."),
+        h("div", null, "Open ", p("Settings"), " and search for ", p("CA certificate"), " (usually ", p("Security → More security settings → Encryption & credentials → Install a certificate → CA certificate"), ")."),
+        h("div", null, "Tap ", p("Install anyway"), ", then pick ", p("home-ca.crt"), " from Downloads."),
+        h("div", null, "Come back here and tap ", p("Open the games"), "."),
+      ],
+      computer: [
+        h("div", null, "Click ", p("Install certificate"), " below to download ", p("home-ca.crt"), "."),
+        h("div", null, p("Mac:"), " double-click it → Keychain Access → find ", p(name), " → Trust → ", p("Always Trust"), "."),
+        h("div", null, p("Windows:"), " double-click it → Install Certificate → Local Machine → ", p("Trusted Root Certification Authorities"), "."),
+        h("div", null, p("Firefox"), " uses its own list: Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import."),
+        h("div", null, "Restart the browser, then ", p("Open the games"), "."),
+      ],
+    };
+
+    let device = detected;
+    const stepsBox = h("ol", { class: "steps" });
+    const draw = () => mount(stepsBox, STEPS[device].map((s) => h("li", null, s)));
+    draw();
+
+    mount(app,
+      h("div", { class: "center stack", style: { alignItems: "center", gap: ".3rem", marginTop: ".5rem" } },
+        h("div", { style: { fontSize: "3rem" } }, "🔐"),
+        h("h1", { class: "logo", style: { margin: 0 } }, "Set up this phone"),
+        h("p", { class: "muted", style: { margin: 0, maxWidth: "420px" } }, "One-time step so this device trusts our home server. After this, the games open securely (and things like tilt controls work).")),
+      ca.available
+        ? [
+            h("div", { class: "card stack" },
+              h("div", { class: "tabs" }, seg([{ value: "ios", label: "iPhone / iPad" }, { value: "android", label: "Android" }, { value: "computer", label: "Computer" }], device, (v) => { device = v; draw(); })),
+              stepsBox),
+            h("a", { class: "btn primary xl block", href: "/ca.crt", download: "home-ca.crt" }, "⬇️ Install certificate"),
+            appUrl ? h("a", { class: "btn xl block", href: appUrl }, "✅ Done: open the games") : null,
+            h("div", { class: "card small muted stack", style: { gap: ".3rem" } },
+              h("div", null, "Certificate: ", h("b", { style: { color: "var(--text)" } }, ca.name), ca.valid_until ? ` · valid until ${new Date(ca.valid_until).toLocaleDateString()}` : ""),
+              h("div", null, "SHA-256 fingerprint (to compare with what your phone shows):"),
+              h("div", { class: "fp" }, ca.fingerprint),
+              h("div", null, "It only makes this device trust our home server; you can remove it any time in the same settings.")),
+          ]
+        : h("div", { class: "card center" }, "No certificate has been set up yet. Ask the host to upload it in Admin → Settings."));
+  </script>
+</body>
+</html>

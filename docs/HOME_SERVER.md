@@ -23,8 +23,9 @@ GitHub (eazyistired/<app>) ── Actions build & push the image to GHCR on ever
 
 | Piece | What we know |
 |---|---|
-| NAS | TrueNAS SCALE, Docker-based apps; custom apps are installed via **Apps → Discover Apps → ⋮ → Install via YAML** (compose). Built-in apps user/group **apps = 568:568**. Pool name **(verify)**, examples use `tank`. |
-| Reverse proxy | **Nginx Proxy Manager**, HTTPS already configured for the local domain. Certificate type **(verify)**: for a `.local` name it is self-signed or a local CA, not Let's Encrypt. |
+| NAS | TrueNAS SCALE, Docker-based apps; custom apps are installed via **Apps → Discover Apps → ⋮ → Install via YAML** (compose). Built-in apps user/group **apps = 568:568**. A pool called **`storage2`** exists (`/mnt/storage2/storage_main/...`); app datasets' exact path **(verify)**, examples use `tank`. |
+| Reverse proxy | **Nginx Proxy Manager** (TrueNAS app) on host ports **80 / 443** (the app's defaults 30021 / 30022 were changed). The TrueNAS web UI itself is on **81 / 444**. |
+| HTTPS | Home root CA **"Home Lab Root CA"** (`homeCA.crt` / `homeCA.key`) signs a wildcard cert for **`*.grzv.local`** (825 days), uploaded to NPM as a custom certificate. Backups: `/mnt/storage2/storage_main/certs`. Every new `<app>.grzv.local` is covered automatically. Phones install `homeCA.crt` once (Games Center: Admin → Settings → Home certificate → QR → `/setup`). |
 | DNS | **Pi-hole** local DNS records, one per app, pointing at NPM. |
 | Domain pattern | `<app>.grzv.local` (e.g. `games.grzv.local`). |
 | Code & images | GitHub user **eazyistired**; images on **GHCR** `ghcr.io/eazyistired/<app>`. Public repo → anonymous pulls work. Private repo → make the *package* public or give TrueNAS registry credentials. |
@@ -53,6 +54,12 @@ wrapper, it never changes). After CI is green:
   (`/api/health`, admin page), then compare with the latest commit on `main`.
 
 ## 3. Gotchas we hit
+- **HTTPS "doesn't load" but HTTP works** → NPM's HTTPS is on a non-standard host port
+  (TrueNAS app default 30022). Give NPM 443 (TrueNAS UI already moved to 444).
+- **"Not secure"** → the phone doesn't trust the CA: install `homeCA.crt` and (iPhone) switch it on
+  under Certificate Trust Settings. Don't regenerate the CA; only re-sign site certificates.
+- **The TrueNAS shell doesn't resolve `*.grzv.local`** (it doesn't use Pi-hole): test against
+  `127.0.0.1` with `-servername`.
 - **HTTPS matters on phones**: motion sensors, screen wake lock, clipboard etc. only work in a
   secure context **with a certificate the phone trusts**. With a self-signed/local-CA cert,
   install and trust the CA on each phone, or design a fallback (e.g. tap controls).
@@ -96,6 +103,12 @@ wrapper, it never changes). After CI is green:
 - Claude Code cloud sessions can push branches but **cannot delete remote branches**: keep feature
   branches local or tell the owner which ones to delete.
 - English UI and docs. Commit messages describe the why.
+
+## 5b. A "setup this phone" page in every app (optional)
+New apps can reuse Games Center's approach: serve the CA at `/ca.crt` with content type
+`application/x-x509-ca-cert`, plus a `/setup` page reachable over plain HTTP on
+`http://<NAS-IP>:<port>` (Force SSL in NPM would redirect the domain to https). Or just point
+people at the Games Center setup QR: the CA is the same for every app.
 
 ## 6. Templates
 

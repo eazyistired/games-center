@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__
@@ -149,6 +149,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         initial = await asyncio.to_thread(build_payload, session, device_id) if session else None
         await hub.serve(ws, room, device_id, on_message=touch, initial=initial)
 
+    @app.get("/ca.crt", include_in_schema=False)
+    def ca_download() -> Response:
+        """The home CA (public certificate) - this content type makes phones offer to install it."""
+        from .services.certs import ca_path
+
+        path = ca_path()
+        if not path.exists():
+            return Response("No certificate uploaded yet (Admin -> Settings)", status_code=404)
+        return Response(
+            path.read_bytes(),
+            media_type="application/x-x509-ca-cert",
+            headers={
+                "Content-Disposition": 'attachment; filename="home-ca.crt"',
+                "Cache-Control": "no-cache",
+            },
+        )
+
+    @app.get("/setup", include_in_schema=False)
+    def setup_redirect() -> RedirectResponse:
+        return RedirectResponse("/setup/")
+
     @app.get("/admin", include_in_schema=False)
     def admin_redirect() -> RedirectResponse:
         return RedirectResponse("/admin/")
@@ -157,6 +178,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.mount("/static", StaticFiles(directory=web / "shared"), name="static")
     app.mount("/games", StaticFiles(directory=settings.games_dir, html=True), name="games")
     app.mount("/admin/", StaticFiles(directory=web / "admin", html=True), name="admin")
+    app.mount("/setup/", StaticFiles(directory=web / "setup", html=True), name="setup")
     app.mount("/", StaticFiles(directory=web / "shell", html=True), name="shell")
     return app
 
