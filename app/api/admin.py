@@ -148,6 +148,10 @@ def admin_players(db: DB) -> list[dict[str, Any]]:
             .group_by(SessionParticipant.player_id)
         )
     }
+    phones: dict[int, Any] = {}
+    for d in db.scalars(select(Device).where(Device.player_id.is_not(None))):
+        if d.player_id not in phones or d.last_seen > phones[d.player_id]:
+            phones[d.player_id] = d.last_seen
     out = []
     for p in db.scalars(select(Player).order_by(func.lower(Player.name))):
         n, last = stats.get(p.id, (0, None))
@@ -160,9 +164,21 @@ def admin_players(db: DB) -> list[dict[str, Any]]:
                 "sessions": n,
                 "last_played": iso(last),
                 "created_at": iso(p.created_at),
+                "phone_seen": iso(phones.get(p.id)),  # last use on the phone that has this name
             }
         )
     return out
+
+
+@protected.post("/players/{player_id}/release")
+def release_phone(db: DB, player_id: int) -> dict[str, Any]:
+    """Free this name from any phone (e.g. a lost phone)."""
+    from ..services.identity import release
+
+    n = release(db, player_id)
+    audit(db, "release", "player", player_id, {"phones": n})
+    db.commit()
+    return {"released": n}
 
 
 @protected.post("/players")

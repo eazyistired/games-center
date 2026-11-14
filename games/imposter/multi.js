@@ -20,17 +20,39 @@ const send = (action) => GC.act(action).catch((e) => toast(e.message, "bad"));
 // ---------------------------------------------------------------- pieces
 function topBar() {
   return h("div", { class: "bar" },
-    v.is_host ? h("button", { class: "btn small ghost", onclick: hostMenu }, "👑 Host") : h("span", { class: "badge" }, `${nm(v.me)}`),
+    v.is_host ? h("button", { class: "btn small ghost", onclick: hostMenu }, "👑 Host") : h("button", { class: "btn small ghost", onclick: playerMenu }, `${nm(v.me)} ▾`),
     h("span", { class: "badge" }, `Round ${v.round} / ${v.rounds}`));
+}
+
+async function playerMenu() {
+  const choice = await modal(`${nm(v.me)}`, h("p", { class: "muted" }, "Need to take over the host controls (e.g. the host left)? The host is asked first if their phone is active."), [
+    { label: "👑 Become host", value: "host" },
+    { label: "Close", class: "primary", value: null },
+  ]);
+  if (choice !== "host") return;
+  toast("Asking the host…");
+  const r = await GC.becomeHost().catch((e) => { toast(e.message, "bad"); return null; });
+  if (r === "denied") toast("The host said no", "bad");
+}
+
+async function pickNewHost() {
+  const others = (session.lobby?.seats || []).filter((x) => x.joined && !x.mine);
+  if (!others.length) return toast("Nobody else has joined on a phone", "bad");
+  const id = await modal("👑 Make someone else host", h("p", { class: "muted" }, "They get the host controls; you keep playing."),
+    [...others.map((x) => ({ label: `${x.emoji} ${x.name}`, value: x.player_id })), { label: "Cancel", class: "ghost", value: null }]);
+  if (id == null) return;
+  try { await GC.makeHost(id); toast(`👑 ${nm(id)} is now the host`, "good"); } catch (e) { toast(e.message, "bad"); }
 }
 
 async function hostMenu() {
   const canSkip = ["reveal", "clues", "discuss"].includes(v.phase);
   const choice = await modal("Host menu", h("p", { class: "muted" }, "Finishing now saves the points from the rounds played so far."), [
     canSkip && { label: "New word (redo round)", value: "skip" },
+    { label: "👑 Make someone else host", value: "handover" },
     { label: "Finish now", value: "finish" },
     { label: "Close", class: "primary", value: null },
   ].filter(Boolean));
+  if (choice === "handover") return pickNewHost();
   if (choice === "skip") send({ type: "skip_word" });
   if (choice === "finish" && await confirmDialog("Finish the game?", "Points from completed rounds are saved.", "Finish")) send({ type: "finish" });
 }
@@ -248,6 +270,7 @@ export function runMulti() {
     session = s;
     if (s.status === "finished" || s.status === "abandoned") return GC.exit();
     if (s.status === "lobby" || !s.view) { location.href = `/#/sessions/${s.id}`; return; }
+    if (v && !v.is_host && s.view.is_host) toast("👑 You're now the host", "good");
     v = s.view;
     // don't wipe a half-typed guess or a vote in progress when someone else's update arrives
     if (document.activeElement?.tagName === "INPUT" && v.phase === "guess") return;
