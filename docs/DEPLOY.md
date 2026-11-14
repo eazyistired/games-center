@@ -38,6 +38,30 @@ Hosts → Proxy Hosts → Add:
 ## 5. Pi-hole
 Local DNS → DNS Records: `games.grzv.local` → IP of Nginx Proxy Manager.
 
+## 5b. HTTPS that phones trust (home CA)
+What worked on this network:
+- **Ports:** the TrueNAS web interface runs on **81 / 444** (System → General → GUI), so Nginx
+  Proxy Manager can own **80 / 443**. The NPM app's default host ports (**30021 / 30022**) must be
+  changed to 80 / 443 in Apps → Nginx Proxy Manager → Edit, otherwise `https://games.grzv.local`
+  doesn't load (it only works as `https://games.grzv.local:30022`).
+- **Certificate:** a home root CA ("Home Lab Root CA", `homeCA.crt` + `homeCA.key`, 10 years) signs
+  a wildcard certificate for `*.grzv.local` (825 days, SAN + serverAuth). Files are backed up in
+  `/mnt/storage2/storage_main/certs`. Recreating the CA means re-installing it on every phone,
+  so don't; just re-sign the site certificate every ~2 years:
+  ```bash
+  openssl x509 -req -in grzv.local.csr -CA homeCA.crt -CAkey homeCA.key -CAcreateserial -out grzv.local.crt -days 825 -sha256 -extfile grzv.local.ext
+  ```
+  then upload the new `grzv.local.crt` as the custom certificate in NPM.
+- **Phones trust the CA** (once per device): upload `homeCA.crt` in **Admin → Settings → Home
+  certificate**, fill in the two addresses, and let people scan the QR there (or 📲 Invite →
+  "First time on this phone"). It opens `/setup` over plain HTTP on `http://<NAS-IP>:8080`, which
+  shows the steps for iPhone / Android / computers (incl. the easy-to-miss iPhone switch:
+  Settings → General → About → Certificate Trust Settings).
+- **Check what NPM serves** (TrueNAS shell, which doesn't use Pi-hole, so connect to 127.0.0.1):
+  ```bash
+  openssl s_client -connect 127.0.0.1:443 -servername games.grzv.local </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -ext subjectAltName
+  ```
+
 ## 6. Phones
 Open `https://games.grzv.local`, then **Share → Add to Home Screen** (iOS) or
 **⋮ → Add to Home screen** (Android) for a fullscreen app icon.

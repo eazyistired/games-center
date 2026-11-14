@@ -29,6 +29,7 @@ from ..models import (
     utcnow,
 )
 from ..services import backup as bk
+from ..services import certs
 from ..services.audit import audit
 from ..services.decks import clean_word, deck_out, sync_builtin_decks
 from ..services.registry import GAMES, deck_game, get_manifest, merged_settings, sync_games
@@ -885,6 +886,38 @@ def recompute_all(db: DB) -> dict[str, int]:
     audit(db, "recompute", "sessions", None, {"count": n})
     db.commit()
     return {"sessions": n}
+
+
+# ---------------------------------------------------------------- home certificate
+
+
+@protected.get("/ca")
+def admin_ca() -> dict[str, Any]:
+    return certs.info()
+
+
+@protected.post("/ca")
+async def upload_ca(db: DB, file: UploadFile = File(...)) -> dict[str, Any]:  # noqa: B008
+    data = await file.read()
+    if len(data) > 64 * 1024:
+        raise bad_request("That file is too big for a certificate")
+    try:
+        out = certs.save(data)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+    audit(
+        db, "upload", "certificate", None, {"name": out["name"], "fingerprint": out["fingerprint"]}
+    )
+    db.commit()
+    return out
+
+
+@protected.delete("/ca")
+def delete_ca(db: DB) -> dict[str, bool]:
+    certs.remove()
+    audit(db, "delete", "certificate")
+    db.commit()
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------- backups

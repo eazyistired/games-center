@@ -476,8 +476,46 @@ async function deckDialog(id) {
 }
 
 // ------------------------------------------------------------ settings
+function certCard(ca, v) {
+  const file = h("input", { type: "file", accept: ".crt,.pem,.cer,.der" });
+  const setupBase = () => (v.setup_url || `http://${location.host}`).replace(/\/$/, "");
+  const qrImg = h("img", { class: "qr", alt: "QR code", style: { width: "220px" } });
+  const qrText = h("div", { class: "small muted", style: { wordBreak: "break-all" } });
+  const drawQr = () => { const u = `${setupBase()}/setup/`; qrImg.src = `/api/qr.svg?data=${encodeURIComponent(u)}`; qrText.textContent = u; };
+  drawQr();
+  return h("div", { class: "card stack" },
+    h("h3", { style: { margin: 0 } }, "🔐 Home certificate"),
+    h("p", { class: "small muted", style: { margin: 0 } }, "Upload your home CA's public certificate (e.g. homeCA.crt, never the .key). Friends scan the QR below to install it, so their phones trust https://… on your server."),
+    ca.available
+      ? h("div", { class: "small stack", style: { gap: ".2rem" } },
+          h("div", null, h("b", null, ca.name), ca.self_signed ? "" : " (not a root CA?)", ` · valid until ${ca.valid_until}`),
+          h("div", { class: "tiny muted", style: { wordBreak: "break-all", fontFamily: "ui-monospace, monospace" } }, `SHA-256 ${ca.fingerprint}`))
+      : h("div", { class: "small muted" }, "No certificate uploaded yet."),
+    h("div", { class: "row wrap" }, file,
+      h("button", { class: "btn small primary", onclick: async () => {
+        if (!file.files[0]) return toast("Pick the .crt file first", "bad");
+        const fd = new FormData(); fd.append("file", file.files[0]);
+        await guarded(() => api("/api/admin/ca", { method: "POST", body: fd }));
+        toast("Certificate uploaded", "good"); refresh();
+      } }, "Upload"),
+      ca.available && h("button", { class: "btn small ghost", onclick: async () => {
+        if (!(await confirmDialog("Remove the certificate?", "The setup page will stop offering it.", "Remove", true))) return;
+        await guarded(() => api("/api/admin/ca", { method: "DELETE" })); refresh();
+      } }, "Remove")),
+    h("label", { class: "field" }, "App address (HTTPS)", h("span", { class: "help" }, "Where people go after installing, e.g. https://games.grzv.local"),
+      h("input", { value: v.app_url, placeholder: "https://games.grzv.local", oninput: (e) => { v.app_url = e.target.value; } })),
+    h("label", { class: "field" }, "Setup address (plain HTTP)", h("span", { class: "help" }, "Must work BEFORE the phone trusts the certificate: use the NAS IP and the app's port, e.g. http://192.168.1.10:8080 (http://games… may be redirected to https by Nginx Proxy Manager)."),
+      h("input", { value: v.setup_url, placeholder: "http://192.168.1.10:8080", oninput: (e) => { v.setup_url = e.target.value; drawQr(); } })),
+    ca.available && h("div", { class: "stack center", style: { alignItems: "center" } },
+      qrImg, qrText,
+      h("div", { class: "row" },
+        h("a", { class: "btn small", href: `${setupBase()}/setup/`, target: "_blank" }, "Open setup page"),
+        h("button", { class: "btn small ghost", onclick: () => window.print() }, "🖨 Print"))),
+    h("p", { class: "tiny muted", style: { margin: 0 } }, "Remember to press Save settings after changing the addresses."));
+}
+
 views.settings = async () => {
-  const s = await api("/api/admin/settings");
+  const [s, ca] = await Promise.all([api("/api/admin/settings"), api("/api/admin/ca")]);
   const v = { ...s.values };
   const zones = (Intl.supportedValuesOf?.("timeZone") || [v.timezone]);
   return h("div", { class: "stack lg" },
@@ -507,6 +545,7 @@ views.settings = async () => {
       h("label", { class: "field" }, "Close idle games after (hours)",
         h("span", { class: "help" }, "Unfinished games nobody has open for this long are finished with the scores so far (or discarded if no round was completed)."),
         h("input", { type: "number", min: 0.25, max: 48, step: 0.25, value: v.idle_hours, oninput: (e) => { v.idle_hours = Number(e.target.value); } }))),
+    certCard(ca, v),
     h("button", { class: "btn primary", onclick: async () => {
       await guarded(() => api("/api/admin/settings", { method: "PUT", body: v }));
       toast("Settings saved", "good");
