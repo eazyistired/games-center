@@ -15,7 +15,7 @@ def start(client, player_ids, mode="solo", teams=None, settings=None):
 def test_health_and_games(client):
     assert client.get("/api/health").json()["status"] == "ok"
     games = client.get("/api/games").json()
-    assert [g["id"] for g in games] == ["heads-up"]
+    assert [g["id"] for g in games] == ["heads-up", "imposter"]
     full = client.get("/api/games/heads-up").json()
     assert len(full["decks"]) == 9
     assert full["defaults"]["round_seconds"] == 60
@@ -211,3 +211,21 @@ def test_backup_export_import(admin, players):
     assert r.status_code == 200, r.text
     assert len(c.get("/api/players").json()) == 6
     assert c.get("/api/admin/dashboard").json()["totals"]["players"] == 6
+
+
+def test_imposter_uses_heads_up_decks(admin, players):
+    c = admin
+    game = c.get("/api/games/imposter").json()
+    assert len(game["decks"]) == 9 and game["defaults"]["rounds"] == 5
+    s = c.post(
+        "/api/sessions",
+        json={"game_id": "imposter", "player_ids": players[:4], "settings": {"decks": []}},
+    ).json()
+    words = c.get(f"/api/sessions/{s['id']}/words").json()
+    assert len(words) > 900
+    # custom deck created for heads-up is visible to imposter too
+    c.post("/api/admin/decks", json={"game_id": "heads-up", "name": "Jokes", "words": "a\nb"})
+    assert any(d["name"] == "Jokes" for d in c.get("/api/games/imposter").json()["decks"])
+    r = c.post("/api/admin/decks", json={"game_id": "imposter", "name": "Xyz", "words": "q"})
+    assert r.json()["game_id"] == "heads-up"
+    assert any(d["name"] == "Xyz" for d in c.get("/api/games/imposter").json()["decks"])

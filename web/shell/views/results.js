@@ -7,7 +7,8 @@ export async function resultsView({ params, app }) {
   const sid = params[0];
   const data = await api(`/api/sessions/${sid}/summary`);
   const s = data.session;
-  const unit = s.game.scoring?.unit || "points";
+  const unitName = s.game.scoring?.unit || "points";
+  const unitOf = (n) => (n === 1 && unitName.endsWith("s") ? unitName.slice(0, -1) : unitName);
   const byPid = new Map(s.participants.map((p) => [p.player_id, p]));
   app.classList.add("has-actionbar");
 
@@ -33,17 +34,17 @@ export async function resultsView({ params, app }) {
   } else if (s.mode === "teams") {
     const teams = s.teams.slice().sort((a, b) => a.placement - b.placement);
     resultBlock = h("div", { class: "stack" },
-      podium(teams.map((t) => ({ emoji: t.player_ids.map((id) => byPid.get(id)?.emoji).join(""), name: t.name, placement: t.placement, sub: `${fmtNum(t.score, 1)} ${unit}` }))),
+      podium(teams.map((t) => ({ emoji: t.player_ids.map((id) => byPid.get(id)?.emoji).join(""), name: t.name, placement: t.placement, sub: `${fmtNum(t.score, 1)} ${unitOf(t.score)}` }))),
       teams.map((t) => h("div", { class: "card tight team-col", style: { "--team": t.color } },
         h("div", { class: "row between" },
           h("h3", { style: { margin: 0 } }, medal(t.placement), " ", h("span", { class: "team-dot" }), t.name),
-          h("div", { class: "right" }, h("b", null, `${fmtNum(t.score, 1)} ${unit}`), h("div", { class: "tiny muted" }, `+${fmtNum(t.points)} pts each`))),
+          h("div", { class: "right" }, h("b", null, `${fmtNum(t.score, 1)} ${unitOf(t.score)}`), h("div", { class: "tiny muted" }, `+${fmtNum(t.points)} pts each`))),
         h("div", { class: "chips", style: { marginTop: ".5rem" } }, t.player_ids.map((id) => byPid.get(id)).filter(Boolean)
           .map((p) => h("span", { class: "chip sm static" }, h("span", { class: "e" }, p.emoji), p.name))))));
   } else {
     const parts = s.participants.slice().sort((a, b) => (a.placement ?? 99) - (b.placement ?? 99));
     resultBlock = h("div", { class: "stack" },
-      podium(parts.map((p) => ({ emoji: p.emoji, name: p.name, placement: p.placement, sub: `${fmtNum(p.score, 1)} ${unit}` }))),
+      podium(parts.map((p) => ({ emoji: p.emoji, name: p.name, placement: p.placement, sub: `${fmtNum(p.score, 1)} ${unitOf(p.score)}` }))),
       h("div", { class: "card tight list" }, parts.map((p) => h("div", { class: "list-item" },
         h("span", { style: { width: "2rem", fontWeight: 800 }, class: p.placement <= 3 ? `medal-${p.placement}` : "muted" }, medal(p.placement) || p.placement),
         h("span", { class: "grow" }, who({ name: p.name, emoji: p.emoji })),

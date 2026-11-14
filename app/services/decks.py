@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..models import Deck, GameSession, Word, WordPlay
-from .registry import GAMES
+from .registry import GAMES, deck_game
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ def sync_builtin_decks(db: Session, games_dir: Path) -> None:
     """Insert/refresh built-in decks. Admin word toggles are preserved; words removed
     from a file are deactivated (their stats are kept)."""
     for game_id, manifest in GAMES.items():
-        if not manifest.get("has_decks"):
+        if not manifest.get("has_decks") or manifest.get("deck_source"):
             continue
         for path in sorted((games_dir / game_id / "decks").glob("*.json")):
             try:
@@ -106,7 +106,7 @@ def words_for_session(db: Session, session: GameSession) -> list[dict[str, Any]]
     q = (
         select(Word, Deck)
         .join(Deck, Deck.id == Word.deck_id)
-        .where(Deck.game_id == session.game_id, Deck.enabled, Word.active)
+        .where(Deck.game_id == deck_game(session.game_id), Deck.enabled, Word.active)
     )
     if deck_ids:
         q = q.where(Deck.id.in_(deck_ids))
