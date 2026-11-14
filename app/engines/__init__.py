@@ -96,7 +96,7 @@ def get_engine(game_id: str) -> Engine | None:
 
 def load_engines() -> None:
     """Import the built-in engines plus any modules listed in EXTRA_ENGINES (dev/tests)."""
-    builtin: list[str] = []  # e.g. "app.engines.imposter" (added per game)
+    builtin = ["app.engines.imposter"]
     extra = [m.strip() for m in os.environ.get("EXTRA_ENGINES", "").split(",") if m.strip()]
     for module in builtin + extra:
         try:

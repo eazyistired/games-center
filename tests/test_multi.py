@@ -134,3 +134,12 @@ def test_websocket_pushes_personal_views(demo):
         ws.send_text("ping")
         while ws.receive_json()["type"] != "pong":
             pass
+
+
+def test_summary_keeps_device_mode(demo):
+    c, players = demo
+    sid = started(c, players)
+    for _ in range(3):
+        c.post(f"/api/sessions/{sid}/act", json={"type": "tap"}, headers=P2)
+    summary = c.get(f"/api/sessions/{sid}/summary", headers=P2).json()["session"]
+    assert summary["device_mode"] == "multi" and summary["status"] == "finished"

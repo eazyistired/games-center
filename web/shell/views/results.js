@@ -15,10 +15,16 @@ export async function resultsView({ params, app }) {
   async function again(btn) {
     btn.disabled = true;
     try {
-      const body = { game_id: s.game_id, mode: s.mode, settings: s.settings, player_ids: s.participants.map((p) => p.player_id) };
+      if (s.device_mode === "multi") {
+        // several phones may tap "Play again": reuse a lobby someone already opened
+        const open = (await api("/api/sessions/live")).find((x) => x.game_id === s.game_id && x.status === "lobby" && x.device_mode === "multi");
+        if (open) { location.hash = `/sessions/${open.id}`; return; }
+      }
+      const body = { game_id: s.game_id, mode: s.mode, settings: s.settings, player_ids: s.participants.map((p) => p.player_id), device_mode: s.device_mode };
       if (s.mode === "teams") body.teams = s.teams.map((t) => ({ name: t.name, color: t.color, player_ids: t.player_ids }));
       const next = await api("/api/sessions", { method: "POST", body });
-      location.href = next.game.url;
+      if (next.device_mode === "multi") location.hash = `/sessions/${next.id}`; // new lobby: everyone re-joins
+      else location.href = next.game.url;
     } catch (e) {
       toast(e.message, "bad");
       btn.disabled = false;

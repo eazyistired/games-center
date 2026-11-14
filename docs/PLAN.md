@@ -124,6 +124,10 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Server-side game engines (secrets never reach the wrong phone)
 - [x] Watch live + 📺 TV mode for any running game
 
+### Imposter on everyone's phones (phase 3)
+- [x] Private cards, clue turns on the phones, discussion timer, secret voting with one runoff,
+      typed guess (host judges near misses), reveal with votes; TV shows the reveal
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅
