@@ -86,6 +86,16 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Uses the Heads Up decks (incl. custom ones), no word repeats within a night; menu:
       new word (redo round), finish now, quit
 
+### Tuned In
+- [x] Teams only (2–4 teams, min. 2 players per team); clue-giver rotates within the team
+- [x] Clue-giver secretly sees a target on a dial between two extremes (143 original scale
+      cards), may swap the card (0/1/2 swaps), then says one clue
+- [x] Team drags the needle (with fine-tune buttons) and locks it in
+- [x] Other teams bet left/right of the needle (+1 if right; no bet wins against a bullseye)
+- [x] Scoring: bullseye 4 · close 3 · near 2; play to 10/15/20, checked after equal turns,
+      sole leader wins
+- [x] No repeated cards within the game / tonight on that phone
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

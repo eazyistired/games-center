@@ -14,6 +14,8 @@ game; everyone's results land in shared leaderboards.
     250, + custom decks.
   - **Imposter**: everyone gets the secret word except the imposter; one-word clues, vote,
     last-chance guess. Shares the Heads Up decks.
+  - **Tuned In**: teams; the clue-giver sees a hidden target between two extremes, the team
+    turns a dial to find it, the other teams bet left/right.
 
 Stack: Python 3.12 · FastAPI · SQLite (Alembic migrations) · plain HTML/JS (no build step).
 

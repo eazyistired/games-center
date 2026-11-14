@@ -15,7 +15,7 @@ def start(client, player_ids, mode="solo", teams=None, settings=None):
 def test_health_and_games(client):
     assert client.get("/api/health").json()["status"] == "ok"
     games = client.get("/api/games").json()
-    assert [g["id"] for g in games] == ["heads-up", "imposter"]
+    assert [g["id"] for g in games] == ["heads-up", "imposter", "tuned-in"]
     full = client.get("/api/games/heads-up").json()
     assert len(full["decks"]) == 9
     assert full["defaults"]["round_seconds"] == 60
@@ -229,3 +229,19 @@ def test_imposter_uses_heads_up_decks(admin, players):
     r = c.post("/api/admin/decks", json={"game_id": "imposter", "name": "Xyz", "words": "q"})
     assert r.json()["game_id"] == "heads-up"
     assert any(d["name"] == "Xyz" for d in c.get("/api/games/imposter").json()["decks"])
+
+
+def test_tuned_in_session(admin, players):
+    c = admin
+    game = c.get("/api/games/tuned-in").json()
+    assert game["modes"] == ["teams"] and game["defaults"]["play_to"] == 10
+    assert c.get("/games/tuned-in/spectrums.json").json()["pairs"]
+    teams = [{"player_ids": players[:2]}, {"player_ids": players[2:4]}]
+    s = c.post("/api/sessions", json={"game_id": "tuned-in", "mode": "teams", "teams": teams})
+    assert s.status_code == 200
+    sid = s.json()["id"]
+    r = c.post(
+        f"/api/sessions/{sid}/result",
+        json={"scores": [{"team": 0, "score": 11}, {"team": 1, "score": 7}]},
+    )
+    assert r.json()["teams"][0]["placement"] == 1
