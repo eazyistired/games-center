@@ -1,0 +1,576 @@
+{
+ "pairs": [
+  [
+   "Cold",
+   "Hot"
+  ],
+  [
+   "Useless",
+   "Essential"
+  ],
+  [
+   "Underrated",
+   "Overrated"
+  ],
+  [
+   "Boring",
+   "Exciting"
+  ],
+  [
+   "Cheap",
+   "Expensive"
+  ],
+  [
+   "Easy to spell",
+   "Hard to spell"
+  ],
+  [
+   "Ugly",
+   "Beautiful"
+  ],
+  [
+   "Quiet",
+   "Loud"
+  ],
+  [
+   "Tiny",
+   "Huge"
+  ],
+  [
+   "Slow",
+   "Fast"
+  ],
+  [
+   "Soft",
+   "Hard"
+  ],
+  [
+   "Bad pizza topping",
+   "Great pizza topping"
+  ],
+  [
+   "Smells bad",
+   "Smells good"
+  ],
+  [
+   "Unhealthy food",
+   "Healthy food"
+  ],
+  [
+   "Bad gift",
+   "Great gift"
+  ],
+  [
+   "Normal pet",
+   "Weird pet"
+  ],
+  [
+   "Easy job",
+   "Hard job"
+  ],
+  [
+   "Low-paid job",
+   "High-paid job"
+  ],
+  [
+   "Forgettable movie",
+   "Unforgettable movie"
+  ],
+  [
+   "Bad superpower",
+   "Great superpower"
+  ],
+  [
+   "Dog person thing",
+   "Cat person thing"
+  ],
+  [
+   "Morning thing",
+   "Night thing"
+  ],
+  [
+   "Summer thing",
+   "Winter thing"
+  ],
+  [
+   "Childish",
+   "Grown-up"
+  ],
+  [
+   "Old-fashioned",
+   "Modern"
+  ],
+  [
+   "Scary",
+   "Comforting"
+  ],
+  [
+   "Bad first date",
+   "Great first date"
+  ],
+  [
+   "Terrible wedding song",
+   "Perfect wedding song"
+  ],
+  [
+   "Sad song",
+   "Happy song"
+  ],
+  [
+   "Bad advice",
+   "Good advice"
+  ],
+  [
+   "Mild",
+   "Spicy"
+  ],
+  [
+   "Rough",
+   "Smooth"
+  ],
+  [
+   "Fragile",
+   "Indestructible"
+  ],
+  [
+   "Rare",
+   "Common"
+  ],
+  [
+   "Dangerous",
+   "Safe"
+  ],
+  [
+   "Illegal",
+   "Legal"
+  ],
+  [
+   "Unpopular opinion",
+   "Popular opinion"
+  ],
+  [
+   "Lazy",
+   "Hardworking"
+  ],
+  [
+   "Introvert activity",
+   "Extrovert activity"
+  ],
+  [
+   "Relaxing",
+   "Stressful"
+  ],
+  [
+   "Sounds made up",
+   "Sounds true"
+  ],
+  [
+   "Fantasy",
+   "Sci-fi"
+  ],
+  [
+   "Villain",
+   "Hero"
+  ],
+  [
+   "Sidekick",
+   "Main character"
+  ],
+  [
+   "Bad name for a dog",
+   "Great name for a dog"
+  ],
+  [
+   "Bad name for a band",
+   "Great name for a band"
+  ],
+  [
+   "Worst holiday",
+   "Best holiday"
+  ],
+  [
+   "Bad place for a nap",
+   "Great place for a nap"
+  ],
+  [
+   "Short-lived trend",
+   "Timeless classic"
+  ],
+  [
+   "Overpriced",
+   "Bargain"
+  ],
+  [
+   "Hard to pronounce",
+   "Easy to pronounce"
+  ],
+  [
+   "Tastes bad",
+   "Tastes good"
+  ],
+  [
+   "Breakfast food",
+   "Dinner food"
+  ],
+  [
+   "Snack",
+   "Meal"
+  ],
+  [
+   "Sweet",
+   "Savory"
+  ],
+  [
+   "Drink with a straw",
+   "Drink from a mug"
+  ],
+  [
+   "Indoor activity",
+   "Outdoor activity"
+  ],
+  [
+   "Team sport",
+   "Solo sport"
+  ],
+  [
+   "Easy sport",
+   "Hard sport"
+  ],
+  [
+   "Boring sport to watch",
+   "Exciting sport to watch"
+  ],
+  [
+   "Thing you rent",
+   "Thing you buy"
+  ],
+  [
+   "Needs instructions",
+   "Self-explanatory"
+  ],
+  [
+   "Bad smell in a car",
+   "Good smell in a car"
+  ],
+  [
+   "Low-tech",
+   "High-tech"
+  ],
+  [
+   "Analog",
+   "Digital"
+  ],
+  [
+   "Messy",
+   "Tidy"
+  ],
+  [
+   "Mainstream",
+   "Niche"
+  ],
+  [
+   "Famous",
+   "Unknown"
+  ],
+  [
+   "Overrated city",
+   "Underrated city"
+  ],
+  [
+   "Bad tattoo idea",
+   "Good tattoo idea"
+  ],
+  [
+   "Worst chore",
+   "Least bad chore"
+  ],
+  [
+   "Hard to draw",
+   "Easy to draw"
+  ],
+  [
+   "Hard to mime",
+   "Easy to mime"
+  ],
+  [
+   "Ordinary",
+   "Magical"
+  ],
+  [
+   "Natural",
+   "Artificial"
+  ],
+  [
+   "Wet",
+   "Dry"
+  ],
+  [
+   "Heavy",
+   "Light"
+  ],
+  [
+   "Square",
+   "Round"
+  ],
+  [
+   "Hated vegetable",
+   "Loved vegetable"
+  ],
+  [
+   "Feels short",
+   "Feels long"
+  ],
+  [
+   "Quick to learn",
+   "Takes years to master"
+  ],
+  [
+   "Nobody needs it",
+   "Everybody needs it"
+  ],
+  [
+   "Embarrassing",
+   "Impressive"
+  ],
+  [
+   "Polite",
+   "Rude"
+  ],
+  [
+   "Formal",
+   "Casual"
+  ],
+  [
+   "Small talk topic",
+   "Deep conversation topic"
+  ],
+  [
+   "Normal thing to collect",
+   "Weird thing to collect"
+  ],
+  [
+   "Bad thing to say on a first date",
+   "Good thing to say on a first date"
+  ],
+  [
+   "Clean",
+   "Dirty"
+  ],
+  [
+   "Better hot",
+   "Better cold"
+  ],
+  [
+   "Better raw",
+   "Better cooked"
+  ],
+  [
+   "Harmless animal",
+   "Deadly animal"
+  ],
+  [
+   "Cute animal",
+   "Ugly animal"
+  ],
+  [
+   "Bad pet for a flat",
+   "Great pet for a flat"
+  ],
+  [
+   "Calm",
+   "Chaotic"
+  ],
+  [
+   "Simple",
+   "Complicated"
+  ],
+  [
+   "Predictable",
+   "Surprising"
+  ],
+  [
+   "Bad excuse",
+   "Good excuse"
+  ],
+  [
+   "Dumb invention",
+   "Genius invention"
+  ],
+  [
+   "Thing you'd survive without",
+   "Thing you can't live without"
+  ],
+  [
+   "Least romantic",
+   "Most romantic"
+  ],
+  [
+   "Bad karaoke song",
+   "Great karaoke song"
+  ],
+  [
+   "Smart",
+   "Dumb"
+  ],
+  [
+   "Silly",
+   "Serious"
+  ],
+  [
+   "Uncool",
+   "Cool"
+  ],
+  [
+   "Weak",
+   "Strong"
+  ],
+  [
+   "Bad at parties",
+   "Life of the party"
+  ],
+  [
+   "Basic",
+   "Fancy"
+  ],
+  [
+   "Fast food",
+   "Fine dining"
+  ],
+  [
+   "Thing your parents hate",
+   "Thing your parents love"
+  ],
+  [
+   "Kid's movie",
+   "Adult movie"
+  ],
+  [
+   "Peaceful place",
+   "Busy place"
+  ],
+  [
+   "Inside a house",
+   "Outside a house"
+  ],
+  [
+   "Short word",
+   "Long word"
+  ],
+  [
+   "Ordinary name",
+   "Unusual name"
+  ],
+  [
+   "Gets better with age",
+   "Gets worse with age"
+  ],
+  [
+   "Hard to find",
+   "Easy to find"
+  ],
+  [
+   "Waste of money",
+   "Worth every penny"
+  ],
+  [
+   "Fun to say",
+   "Boring to say"
+  ],
+  [
+   "Bad Monday",
+   "Good Monday"
+  ],
+  [
+   "Cringe",
+   "Classy"
+  ],
+  [
+   "Unknown band",
+   "Legendary band"
+  ],
+  [
+   "Small country",
+   "Big country"
+  ],
+  [
+   "Bad holiday destination",
+   "Dream holiday destination"
+  ],
+  [
+   "Plain sandwich",
+   "Loaded sandwich"
+  ],
+  [
+   "Comfortable shoes",
+   "Uncomfortable shoes"
+  ],
+  [
+   "Bad hiding spot",
+   "Great hiding spot"
+  ],
+  [
+   "Harmless lie",
+   "Terrible lie"
+  ],
+  [
+   "Terrible job interview answer",
+   "Perfect job interview answer"
+  ],
+  [
+   "Easy exam subject",
+   "Hard exam subject"
+  ],
+  [
+   "Unhelpful app",
+   "Life-saving app"
+  ],
+  [
+   "Overused emoji",
+   "Underused emoji"
+  ],
+  [
+   "Sleepy",
+   "Energetic"
+  ],
+  [
+   "Nostalgic",
+   "Futuristic"
+  ],
+  [
+   "Ancient",
+   "Brand new"
+  ],
+  [
+   "Pointless meeting",
+   "Important meeting"
+  ],
+  [
+   "Smell you avoid",
+   "Smell you love"
+  ],
+  [
+   "Good habit",
+   "Bad habit"
+  ],
+  [
+   "Mysterious",
+   "Obvious"
+  ],
+  [
+   "Bad board game",
+   "Great board game"
+  ],
+  [
+   "Bad movie snack",
+   "Perfect movie snack"
+  ],
+  [
+   "Sad ending",
+   "Happy ending"
+  ],
+  [
+   "Weird food combo",
+   "Classic food combo"
+  ]
+ ]
+}

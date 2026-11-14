@@ -372,7 +372,7 @@ views.games = async () => {
 };
 
 async function gameDefaultsDialog(g) {
-  const decks = g.has_decks ? await api(`/api/admin/decks?game_id=${g.id}`) : [];
+  const decks = g.has_decks ? await api(`/api/admin/decks?game_id=${g.deck_source || g.id}`) : [];
   const values = { ...g.defaults };
   const r = await modal(`${g.emoji} ${g.name} defaults`, settingsForm(g.settings_schema, values, decks), [
     { label: "Reset", class: "ghost", value: "reset" },
@@ -387,12 +387,14 @@ async function gameDefaultsDialog(g) {
 
 // ------------------------------------------------------------ decks
 views.decks = async () => {
-  const games = (await api("/api/admin/games")).filter((g) => g.has_decks);
+  const allGames = await api("/api/admin/games");
+  const games = allGames.filter((g) => g.has_decks && !g.deck_source);
   if (!games.length) return empty("🃏", "No installed game uses decks.");
   const [decks, hardest] = await Promise.all([api("/api/admin/decks"), api("/api/admin/words/stats?limit=15")]);
   return h("div", { class: "stack lg" },
     games.map((g) => h("div", { class: "stack" },
-      h("div", { class: "row between" }, h("h2", { style: { margin: 0 } }, `${g.emoji} ${g.name}`),
+      h("div", { class: "row between" }, h("div", null, h("h2", { style: { margin: 0 } }, `${g.emoji} ${g.name}`),
+        allGames.some((x) => x.deck_source === g.id) && h("div", { class: "tiny muted" }, `Also used by: ${allGames.filter((x) => x.deck_source === g.id).map((x) => `${x.emoji} ${x.name}`).join(", ")}`)),
         h("button", { class: "btn primary small", onclick: () => newDeckDialog(g) }, "+ Custom deck")),
       h("div", { class: "card tight table-wrap" }, h("table", { class: "admin" },
         h("thead", null, h("tr", null, h("th"), h("th", null, "Deck"), h("th", { class: "right" }, "Words"), h("th", null, "On"), h("th"))),

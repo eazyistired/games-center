@@ -75,6 +75,39 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] 9 built-in decks (980 words, incl. IMDb Top 250) + custom decks from admin
 - [x] Long words/titles auto-shrink to fit the screen
 
+### Imposter
+- [x] Pass the phone; press-and-hold card reveals the secret word (or "You're the IMPOSTER")
+- [x] 1 or 2 imposters (capped so the crew is always the majority), optional category hint for
+      the imposter, imposter role rotates (no repeats in a row)
+- [x] Clue lap with a random starting player, optional discussion timer (2/3/5 min)
+- [x] Group vote → reveal → caught imposter gets a last guess at the word
+- [x] Points: +2 imposter escapes · +1 caught imposter who guesses the word · +1 each crew
+      member per caught imposter who misses
+- [x] Uses the Heads Up decks (incl. custom ones), no word repeats within a night; menu:
+      new word (redo round), finish now, quit
+
+### Three Rounds
+- [x] Teams only (2–4 teams, min. 2 players per team); the clue-giver holds the phone
+- [x] One pool of words (words per player × players), reused in all three rounds:
+      🗣️ Describe → ☝️ One word → 🤐 Mime
+- [x] Teams alternate, clue-giver rotates within the team; Got it / Skip buttons, timer, pause
+      with End turn now
+- [x] Skips per turn (0/1/2/unlimited); a skipped word is thrown out for the rest of the game;
+      the word on screen when time runs out goes back in the hat
+- [x] Leftover time carries over into the next round when the hat empties mid-turn
+- [x] Review after every turn (fix mistakes); per-round scores; best clue-giver
+- [x] Score = words guessed by the team over all three rounds; uses the Heads Up decks
+
+### Tuned In
+- [x] Teams only (2–4 teams, min. 2 players per team); clue-giver rotates within the team
+- [x] Clue-giver secretly sees a target on a dial between two extremes (143 original scale
+      cards), may swap the card (0/1/2 swaps), then says one clue
+- [x] Team drags the needle (with fine-tune buttons) and locks it in
+- [x] Other teams bet left/right of the needle (+1 if right; no bet wins against a bullseye)
+- [x] Scoring: bullseye 4 · close 3 · near 2; play to 10/15/20, checked after equal turns,
+      sole leader wins
+- [x] No repeated cards within the game / tonight on that phone
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

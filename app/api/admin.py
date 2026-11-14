@@ -30,7 +30,7 @@ from ..models import (
 from ..services import backup as bk
 from ..services.audit import audit
 from ..services.decks import clean_word, deck_out, sync_builtin_decks
-from ..services.registry import GAMES, get_manifest, merged_settings, sync_games
+from ..services.registry import GAMES, deck_game, get_manifest, merged_settings, sync_games
 from ..services.runtime import SCORING_FORMULAS, get_runtime, set_runtime
 from ..services.scoring import recompute_session
 from ..services.sessions import iso, session_out
@@ -574,6 +574,7 @@ def admin_games(db: DB) -> list[dict[str, Any]]:
                 "admin_settings": g.settings,
                 "defaults": merged_settings(m, g.settings) if m else {},
                 "has_decks": (m or {}).get("has_decks", False),
+                "deck_source": (m or {}).get("deck_source"),
                 "sessions": counts.get(g.id, 0),
             }
         )
@@ -685,6 +686,7 @@ def create_deck(db: DB, body: DeckIn) -> dict[str, Any]:
     m = get_manifest(body.game_id)
     if not m or not m.get("has_decks"):
         raise bad_request("That game doesn't use decks")
+    body.game_id = deck_game(body.game_id)  # games sharing decks store them on the source game
     base = "".join(c if c.isalnum() else "-" for c in body.name.lower()).strip("-") or "deck"
     slug, n = f"custom:{body.game_id}:{base}", 1
     while db.scalars(select(Deck).where(Deck.slug == slug)).first():

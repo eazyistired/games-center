@@ -14,7 +14,7 @@ from ..models import Crew, Deck, Game, GameNight, GameSession, Player
 from ..services import leaderboards as lb
 from ..services.decks import deck_out, words_for_session
 from ..services.nights import current_night_date
-from ..services.registry import get_manifest, merged_settings
+from ..services.registry import deck_game, get_manifest, merged_settings
 from ..services.runtime import get_runtime
 from ..services.sessions import (
     SessionError,
@@ -180,7 +180,9 @@ def game_dict(db: DB, game: Game, full: bool = False) -> dict[str, Any] | None:
         out["defaults"] = merged_settings(m, game.settings)
         if m["has_decks"]:
             decks = db.scalars(
-                select(Deck).where(Deck.game_id == game.id, Deck.enabled).order_by(Deck.name)
+                select(Deck)
+                .where(Deck.game_id == deck_game(game.id), Deck.enabled)
+                .order_by(Deck.name)
             )
             out["decks"] = [d for d in (deck_out(db, x) for x in decks) if d["word_count"]]
     return out

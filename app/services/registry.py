@@ -24,9 +24,10 @@ MANIFEST_DEFAULTS: dict[str, Any] = {
     "min_players": 2,
     "max_players": 30,
     "modes": ["solo"],
-    "teams": {"min": 2, "max": 4},
+    "teams": {"min": 2, "max": 4, "min_size": 1},
     "scoring": {"higher_is_better": True, "unit": "points"},
     "has_decks": False,
+    "deck_source": None,  # use another game's decks, e.g. "heads-up"
     "settings": [],
     "entry": "index.html",
 }
@@ -50,6 +51,7 @@ def load_manifests(games_dir: Path) -> dict[str, dict[str, Any]]:
             continue
         manifest = {**MANIFEST_DEFAULTS, **data, "id": game_id}
         manifest["scoring"] = {**MANIFEST_DEFAULTS["scoring"], **data.get("scoring", {})}
+        manifest["teams"] = {**MANIFEST_DEFAULTS["teams"], **data.get("teams", {})}
         manifest.setdefault("name", game_id)
         GAMES[game_id] = manifest
     log.info("loaded %d game(s): %s", len(GAMES), ", ".join(GAMES))
@@ -58,6 +60,12 @@ def load_manifests(games_dir: Path) -> dict[str, dict[str, Any]]:
 
 def get_manifest(game_id: str) -> dict[str, Any] | None:
     return GAMES.get(game_id)
+
+
+def deck_game(game_id: str) -> str:
+    """The game whose decks this game uses (itself unless the manifest sets deck_source)."""
+    m = GAMES.get(game_id) or {}
+    return m.get("deck_source") or game_id
 
 
 def default_settings(manifest: dict[str, Any]) -> dict[str, Any]:

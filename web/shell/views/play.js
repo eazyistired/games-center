@@ -96,6 +96,8 @@ export async function playView({ params, query, app }) {
     const n = st.selected.length;
     if (n < game.min_players) return `Pick at least ${game.min_players} players`;
     if (st.mode === "teams" && st.teams.some((t) => !t.player_ids.length)) return "Every team needs a player";
+    const minSize = game.teams.min_size || 1;
+    if (st.mode === "teams" && st.teams.some((t) => t.player_ids.length < minSize)) return `Every team needs ${minSize}+ players`;
     return null;
   }
 

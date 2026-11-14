@@ -215,3 +215,13 @@ table.board .who .e { font-size: 1.3rem; }
 
 .spinner { width: 28px; height: 28px; border: 3px solid var(--surface-2); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 2rem auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- gamekit (shared game pieces) */
+.gk-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; text-align: center; }
+.gk-countdown { font-size: min(40vmin, 14rem); font-weight: 900; line-height: 1; animation: gk-pop .9s ease; }
+@keyframes gk-pop { from { transform: scale(1.5); opacity: 0; } 30% { opacity: 1; } }
+.gk-overlay { position: fixed; inset: 0; z-index: 40; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 16px; text-align: center; }
+.gk-overlay-title { font-size: min(14vw, 18vh); font-weight: 900; color: var(--accent); line-height: 1; }
+.gk-overlay-actions { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
+.gk-overlay-actions .btn { min-width: 220px; }
+.gk-pause-btn { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--border); background: rgba(34, 29, 25, .85); color: var(--text); font-size: 1.3rem; cursor: pointer; }
