@@ -35,6 +35,26 @@ def startup(settings: Settings) -> None:
         db.commit()
 
 
+def close_idle(settings: Settings) -> None:
+    from .services.live import close_idle_sessions
+
+    with SessionLocal() as db:
+        result = close_idle_sessions(db, settings.idle_hours)
+        db.commit()
+    if any(result.values()):
+        log.info("idle sessions closed: %s", result)
+
+
+async def housekeeping_loop(settings: Settings) -> None:
+    """Every 10 minutes: auto-finish/abandon sessions nobody controlled for SESSION_IDLE_HOURS."""
+    while True:
+        try:
+            await asyncio.to_thread(close_idle, settings)
+        except Exception:  # pragma: no cover
+            log.exception("closing idle sessions failed")
+        await asyncio.sleep(600)
+
+
 async def backup_loop(settings: Settings) -> None:
     """Make a backup when the newest one is older than 24h (checked hourly)."""
     await asyncio.sleep(60)
@@ -55,9 +75,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         startup(settings)
-        task = asyncio.create_task(backup_loop(settings)) if settings.auto_backup else None
+        tasks = [asyncio.create_task(housekeeping_loop(settings))]
+        if settings.auto_backup:
+            tasks.append(asyncio.create_task(backup_loop(settings)))
         yield
-        if task:
+        for task in tasks:
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await task

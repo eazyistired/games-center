@@ -18,6 +18,7 @@ from ..models import (
     AuditLog,
     Crew,
     Deck,
+    Device,
     Game,
     GameNight,
     GameSession,
@@ -104,6 +105,7 @@ def dashboard(db: DB) -> dict[str, Any]:
         ],
         "recent_sessions": [session_out(s) for s in recent],
         "db_size": db_size,
+        "build": {"sha": settings.build_sha, "date": settings.build_date},
         "last_backup": backups[0] if backups else None,
         "backup_count": len(backups),
     }
@@ -257,6 +259,8 @@ def merge_player(db: DB, player_id: int, body: MergeIn) -> dict[str, Any]:
             part.player_id = dst.id
             moved += 1
         touched.add(part.session_id)
+    for dev in db.scalars(select(Device).where(Device.player_id == src.id)):
+        dev.player_id = dst.id
     for crew in db.scalars(select(Crew)):
         if src.id in crew.player_ids:
             ids = [dst.id if i == src.id else i for i in crew.player_ids]

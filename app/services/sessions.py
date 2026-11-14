@@ -84,6 +84,7 @@ def create_session(
     player_ids: list[int],
     teams: list[dict[str, Any]] | None,
     settings: dict[str, Any] | None,
+    device_id: str | None = None,
 ) -> GameSession:
     manifest = get_manifest(game_id)
     game = db.get(Game, game_id)
@@ -121,6 +122,8 @@ def create_session(
         mode=mode,
         settings=merged_settings(manifest, game.settings, settings),
         status="active",
+        controller_device_id=device_id,
+        controller_seen_at=utcnow() if device_id else None,
     )
     if mode == "teams":
         for idx, t in enumerate(teams or []):
@@ -175,6 +178,7 @@ def submit_result(
     )
     session.details = details
     session.progress = None
+    session.partial_result = None
     session.status = "finished"
     session.finished_at = utcnow()
     db.flush()
@@ -233,7 +237,7 @@ def recent_lineups(db: Session, game_id: str, limit: int = 5) -> list[dict[str, 
     return out
 
 
-def active_sessions(db: Session, hours: int = 12) -> list[GameSession]:
+def active_sessions(db: Session, hours: int = 24) -> list[GameSession]:
     since = utcnow() - timedelta(hours=hours)
     return list(
         db.scalars(

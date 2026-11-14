@@ -25,11 +25,14 @@ class Settings:
         self.admin_password = env.get("ADMIN_PASSWORD", "")
         self.timezone = env.get("TZ") or "UTC"
         self.night_cutoff_hour = int(env.get("NIGHT_CUTOFF_HOUR", "6"))
-        self.site_name = env.get("SITE_NAME", "Games Center")
+        self.site_name = env.get("SITE_NAME", "grzv's games")
         self.backup_keep = int(env.get("BACKUP_KEEP", "14"))
         self.auto_backup = _bool(env.get("AUTO_BACKUP"), True)
         self.secure_cookies = _bool(env.get("SECURE_COOKIES"), False)
         self._secret_key = env.get("SECRET_KEY", "")
+        self.build_sha = env.get("BUILD_SHA", "dev")[:12]
+        self.build_date = env.get("BUILD_DATE", "")
+        self.idle_hours = float(env.get("SESSION_IDLE_HOURS", "2"))
 
     @property
     def db_path(self) -> Path:

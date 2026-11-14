@@ -225,3 +225,10 @@ table.board .who .e { font-size: 1.3rem; }
 .gk-overlay-actions { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
 .gk-overlay-actions .btn { min-width: 220px; }
 .gk-pause-btn { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--border); background: rgba(34, 29, 25, .85); color: var(--text); font-size: 1.3rem; cursor: pointer; }
+
+/* ---- live sessions */
+.live-card.mine { border-color: var(--accent); }
+.qr { width: min(80vw, 340px); aspect-ratio: 1; border-radius: 18px; background: #fff; padding: 10px; }
+.me-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .7rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-weight: 700; font-size: .9rem; cursor: pointer; color: var(--text); font-family: inherit; }
+.section-title .live-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--bad); margin-right: .4rem; animation: blink 1.4s infinite; vertical-align: middle; }
+@keyframes blink { 50% { opacity: .35; } }

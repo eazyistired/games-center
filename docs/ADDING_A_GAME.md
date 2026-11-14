@@ -36,11 +36,12 @@ default (Admin → Games) → choice on the start screen → `session.settings`.
 <script src="/static/sdk.js"></script>
 <script type="module">
   import { h, mount, toast } from "/static/ui.js";     // optional helpers
-  const session = await GC.getSession();
+  const session = await GC.start();   // loads the session AND takes control of it (takeover UI)
   // session.mode, session.settings, session.participants[{player_id, name, emoji, team_idx}],
   // session.teams[{idx, name, color, player_ids}], session.progress (after a reload)
   // ... play ...
-  await GC.saveProgress({ round: 2, scores });      // optional, makes refresh safe
+  // after every round/turn: makes refresh + takeover safe; 2nd arg = scores so far (auto-finish)
+  await GC.saveProgress({ round: 2, scores }, { scores: [{ player_id: 1, score: 4 }] });
   await GC.submitResult({ scores: [{ player_id: 1, score: 12 }, ...], details: { summary: "…" } });
   // teams mode: scores: [{ team: 0, score: 5 }, { team: 1, score: 7 }]
   GC.exit();                                         // -> shared results screen
@@ -50,8 +51,9 @@ default (Admin → Games) → choice on the start screen → `session.settings`.
 ## SDK reference (`window.GC`)
 | Call | What it does |
 |---|---|
-| `getSession()` | Session with players, teams, settings, saved progress |
-| `saveProgress(state)` | Store any JSON; returned as `session.progress` after reload |
+| `start({ onLost? })` | Load the session and become the phone driving it (shows the takeover screens if another phone has it, heartbeats, answers takeover requests, shows "continued on another phone") |
+| `getSession()` | Session without taking control (read-only uses) |
+| `saveProgress(state, partial?)` | Store any JSON (versioned; only the controlling phone may save); `partial` = `{scores, details}` so far, used to auto-finish idle sessions. A takeover resumes from the last save, so save at the end of every round/turn |
 | `getWords()` | (deck games) shuffled words `[{id, text, deck, emoji}]`, words used tonight last |
 | `submitResult({scores, details?, word_plays?})` | Finish the session; server computes placements & points |
 | `exit()` | Go to the results screen |

@@ -162,7 +162,11 @@ function fit(el) {
 }
 
 function save() {
-  return GC.saveProgress({ ...st }).catch(() => toast("Couldn't save progress (offline?)", "bad"));
+  const scores = session.mode === "teams"
+    ? session.teams.map((t) => ({ team: t.idx, score: st.scores[t.idx] || 0 }))
+    : session.participants.map((p) => ({ player_id: p.player_id, score: st.scores[p.player_id] || 0 }));
+  const partial = st.turnIdx > 0 ? { scores, details: { summary: `${st.turnIdx} of ${turns.length} turns played` } } : null;
+  return GC.saveProgress({ ...st }, partial).catch(() => toast("Couldn't save progress (offline?)", "bad"));
 }
 
 function standings() {
@@ -492,7 +496,7 @@ function finalScreen() {
 async function boot() {
   mount(root, h("div", { class: "screen centered" }, h("div", { class: "spinner" })));
   try {
-    session = await GC.getSession();
+    session = await GC.start();
   } catch (e) {
     mount(root, h("div", { class: "screen centered" }, h("h2", null, "😵 " + e.message), h("a", { class: "btn", href: "/" }, "Home")));
     return;

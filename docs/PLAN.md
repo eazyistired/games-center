@@ -108,6 +108,15 @@ winner-takes-all. Changing the formula recalculates history.
       sole leader wins
 - [x] No repeated cards within the game / tonight on that phone
 
+### Live sessions (phase 1 of [LIVE_SESSIONS.md](LIVE_SESSIONS.md))
+- [x] "Who are you?" per phone (remembered, switchable; "This is me" on profiles)
+- [x] Controller phone + heartbeat; versioned saves; Take over (needs approval from an active
+      controller and from another active phone using the same name; quiet phones = approved)
+- [x] Live now on Home, live sessions + status chips on Nights, session page, Invite QR
+- [x] Starting a game that's already running offers to go to it
+- [x] Idle sessions (2 h) auto-finish with the scores so far, or are abandoned
+- [x] Build version in Admin and /api/health
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

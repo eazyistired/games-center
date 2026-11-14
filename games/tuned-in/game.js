@@ -18,7 +18,13 @@ let deckOrder = [];
 const pName = (id) => byId.get(id)?.name || "?";
 const pEmoji = (id) => byId.get(id)?.emoji || "🙂";
 const teamOf = (idx) => teams.find((t) => t.idx === idx);
-const save = () => GC.saveProgress({ ...st }).catch(() => toast("Couldn't save progress (offline?)", "bad"));
+const save = () => {
+  const partial = st.log.length ? {
+    scores: teams.map((t) => ({ team: t.idx, score: st.scores[t.idx] || 0 })),
+    details: { summary: `${st.log.length} turns played`, turns: st.log },
+  } : null;
+  return GC.saveProgress({ ...st }, partial).catch(() => toast("Couldn't save progress (offline?)", "bad"));
+};
 const playTo = () => Number(session.settings.play_to) || 10;
 
 // avoid repeating cards tonight on this phone (and within the game via st.used)
@@ -311,7 +317,7 @@ function finalScreen() {
 async function boot() {
   mount(root, h("div", { class: "screen centered" }, h("div", { class: "spinner" })));
   try {
-    [session, PAIRS] = await Promise.all([GC.getSession(), fetch("spectrums.json").then((r) => r.json()).then((d) => d.pairs)]);
+    [session, PAIRS] = await Promise.all([GC.start(), fetch("spectrums.json").then((r) => r.json()).then((d) => d.pairs)]);
   } catch (e) {
     mount(root, h("div", { class: "screen centered" }, h("h2", null, "😵 " + e.message), h("a", { class: "btn", href: "/" }, "Home")));
     return;
