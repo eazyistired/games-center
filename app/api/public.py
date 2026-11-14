@@ -11,8 +11,9 @@ from sqlalchemy import func, select
 from .. import __version__
 from ..config import get_settings
 from ..models import Crew, Deck, Game, GameNight, GameSession, Player, utcnow
+from ..realtime import hub
 from ..services import leaderboards as lb
-from ..services import live
+from ..services import live, multi
 from ..services.decks import deck_out, words_for_session
 from ..services.nights import current_night_date
 from ..services.registry import deck_game, get_manifest, merged_settings
@@ -174,6 +175,7 @@ def game_dict(db: DB, game: Game, full: bool = False) -> dict[str, Any] | None:
         "min_players": m["min_players"],
         "max_players": m["max_players"],
         "modes": m["modes"],
+        "devices": m.get("devices", ["single"]),
         "teams": m["teams"],
         "scoring": m["scoring"],
         "has_decks": m["has_decks"],
@@ -232,6 +234,7 @@ class SessionIn(BaseModel):
     player_ids: list[int] = []
     teams: list[TeamIn] | None = None
     settings: dict[str, Any] = {}
+    device_mode: str = "single"  # single | multi
 
 
 @router.post("/sessions")
@@ -246,15 +249,17 @@ def start_session(db: DB, body: SessionIn, device: DeviceId) -> dict[str, Any]:
             [t.model_dump() for t in body.teams] if body.teams else None,
             body.settings,
             device_id=device,
+            device_mode=body.device_mode,
         )
     except SessionError as exc:
         raise bad_request(str(exc)) from exc
     db.commit()
+    hub.notify(s.id)
     return full_session(db, s, device)
 
 
 def full_session(db: DB, s, device: str | None) -> dict[str, Any]:
-    return session_out(s) | live.live_info(db, s, device)
+    return multi.session_payload(db, s, device, hub.online_devices(s.id))
 
 
 def live_error(exc: live.LiveError) -> HTTPException:
@@ -303,6 +308,7 @@ def save_progress(db: DB, session_id: int, body: ProgressIn, device: DeviceId) -
         s.controller_seen_at = utcnow()
     live.touch_device(db, device)
     db.commit()
+    hub.notify(s.id)
     return {"ok": True, "version": s.state_version}
 
 
@@ -315,11 +321,14 @@ def claim_control(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
     live.touch_device(db, device)
     try:
+        if s.device_mode == "multi" and multi.seat_of(s, device) is None:
+            raise live.LiveError("Join the game first", status=403)
         live.claim_control(db, s, device)
     except live.LiveError as exc:
         db.commit()
         raise live_error(exc) from exc
     db.commit()
+    hub.notify(s.id)
     return full_session(db, s, device)
 
 
@@ -341,6 +350,8 @@ def takeover(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
     except live.LiveError as exc:
         raise live_error(exc) from exc
     db.commit()
+    if out["status"] == "granted":
+        hub.notify(s.id)
     return out
 
 
@@ -350,6 +361,8 @@ def takeover_status(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]
     live.touch_device(db, device)
     out = live.takeover_status(db, s, device)
     db.commit()
+    if out["status"] == "granted":
+        hub.notify(s.id)
     return out
 
 
@@ -372,6 +385,61 @@ def decide_takeover(db: DB, request_id: int, body: DecisionIn, device: DeviceId)
         raise live_error(exc) from exc
     db.commit()
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- multi-phone: seats, start, act
+
+
+class SeatIn(BaseModel):
+    player_id: int
+    force: bool = False  # host only: take the seat from another active phone
+
+
+def multi_error(exc: multi.MultiError) -> HTTPException:
+    return HTTPException(exc.status, {"message": str(exc), **exc.info})
+
+
+def _multi(db: DB, session_id: int, device: str | None, fn) -> dict[str, Any]:
+    s = get_session_or_404(db, session_id)
+    live.touch_device(db, device)
+    try:
+        fn(s)
+    except multi.MultiError as exc:
+        db.rollback()
+        raise multi_error(exc) from exc
+    db.commit()
+    hub.notify(s.id)
+    return full_session(db, s, device)
+
+
+@router.post("/sessions/{session_id}/seat")
+def join_seat(db: DB, session_id: int, body: SeatIn, device: DeviceId) -> dict[str, Any]:
+    """Multi-phone: "I'm Ana" - take Ana's seat on this phone."""
+    return _multi(
+        db,
+        session_id,
+        device,
+        lambda s: multi.claim_seat(
+            db, s, device, body.player_id, hub.online_devices(s.id), body.force
+        ),
+    )
+
+
+@router.delete("/sessions/{session_id}/seat/{player_id}")
+def leave_seat(db: DB, session_id: int, player_id: int, device: DeviceId) -> dict[str, Any]:
+    return _multi(db, session_id, device, lambda s: multi.leave_seat(db, s, device, player_id))
+
+
+@router.post("/sessions/{session_id}/start")
+def start_multi(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
+    """Multi-phone: the host starts the game once everyone has joined."""
+    return _multi(db, session_id, device, lambda s: multi.start(db, s, device))
+
+
+@router.post("/sessions/{session_id}/act")
+def act(db: DB, session_id: int, action: dict[str, Any], device: DeviceId) -> dict[str, Any]:
+    """Multi-phone: a player (or host) action, handled by the game's server engine."""
+    return _multi(db, session_id, device, lambda s: multi.act(db, s, device, action))
 
 
 # ---------------------------------------------------------------- devices ("who are you?")
@@ -475,18 +543,20 @@ def post_result(db: DB, session_id: int, body: ResultIn, device: DeviceId) -> di
     except SessionError as exc:
         raise bad_request(str(exc)) from exc
     db.commit()
+    hub.notify(s.id)
     return full_session(db, s, device)
 
 
 @router.post("/sessions/{session_id}/abandon")
 def abandon(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
-    if s.status == "active":
+    if s.status in ("active", "lobby"):
         if s.controller_device_id != device and live.controller_active(s):
             raise HTTPException(409, {"message": "This game is running on another phone"})
         s.status = "abandoned"
         s.finished_at = None
         db.commit()
+        hub.notify(s.id)
     return session_out(s)
 
 
@@ -542,7 +612,9 @@ def list_nights(db: DB, limit: int = 60) -> list[dict[str, Any]]:
         select(GameNight)
         .where(
             GameNight.id.in_(
-                select(GameSession.night_id).where(GameSession.status.in_(["finished", "active"]))
+                select(GameSession.night_id).where(
+                    GameSession.status.in_(["finished", "active", "lobby"])
+                )
             )
         )
         .order_by(GameNight.date.desc(), GameNight.id.desc())
@@ -556,7 +628,7 @@ def list_nights(db: DB, limit: int = 60) -> list[dict[str, Any]]:
         summary["live_count"] = db.scalar(
             select(func.count())
             .select_from(GameSession)
-            .where(GameSession.night_id == n.id, GameSession.status == "active")
+            .where(GameSession.night_id == n.id, GameSession.status.in_(["active", "lobby"]))
         )
         out.append(summary)
     return out
@@ -571,7 +643,10 @@ def get_night(db: DB, night_id: int, device: DeviceId) -> dict[str, Any]:
     out["standings"] = lb.leaderboard(db, night_id=night.id)
     sessions = db.scalars(
         select(GameSession)
-        .where(GameSession.night_id == night.id, GameSession.status.in_(["finished", "active"]))
+        .where(
+            GameSession.night_id == night.id,
+            GameSession.status.in_(["finished", "active", "lobby"]),
+        )
         .order_by(GameSession.started_at)
     )
     out["sessions"] = [full_session(db, s, device) for s in sessions]

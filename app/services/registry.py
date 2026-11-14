@@ -28,6 +28,7 @@ MANIFEST_DEFAULTS: dict[str, Any] = {
     "scoring": {"higher_is_better": True, "unit": "points"},
     "has_decks": False,
     "deck_source": None,  # use another game's decks, e.g. "heads-up"
+    "devices": ["single"],  # add "multi" when the game has a server engine (app/engines)
     "settings": [],
     "entry": "index.html",
 }

@@ -68,6 +68,24 @@ for future stats.
 `countdown()`, `createTimer()` (pausable), `pauseOverlay()` (Resume with 3-2-1 + extra
 actions), `onHidden()` (auto-pause when the phone locks), `goImmersive()`, `shuffle()`.
 
+## Multi-phone games (optional)
+1. Manifest: `"devices": ["single", "multi"]`.
+2. Engine in `app/engines/<game>.py` (see the docstring in `app/engines/__init__.py`), add the
+   module to `builtin` in `load_engines()`:
+   ```python
+   class MyGame(Engine):
+       game_id = "my-game"
+       def setup(self, ctx): ...                 # ctx.players, ctx.teams, ctx.settings, ctx.draw_words(n)
+       def act(self, state, ctx, actor, action): ...  # actor.player_id / actor.is_host; raise ActionError
+       def view(self, state, ctx, viewer): ...    # viewer.player_id None = spectator/TV: headline + scoreboard
+       def result(self, state, ctx): ...          # {"scores": [...], "details": {...}} when over
+   ```
+3. Page: check `session.device_mode`; for `"multi"` use
+   `GC.connect((session) => render(session.view))` and `GC.act({type: "vote", ...})`.
+4. Test: see `tests/test_multi.py` + `tests/fixtures/demo_engine.py`. To click through it in a
+   browser, start the server with `EXTRA_ENGINES=tests.fixtures.demo_engine` and a `GAMES_DIR`
+   that also contains `tests/fixtures/games/demo-multi`.
+
 ## 3. Decks (optional)
 `games/<id>/decks/<slug>.json`:
 ```json

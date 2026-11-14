@@ -8,6 +8,8 @@ app/
   migrate.py         runs Alembic on startup
   migrations/        Alembic env + versions/
   auth.py            admin password -> signed cookie
+  realtime.py        WebSocket hub (/ws): per-session rooms + the "live" list
+  engines/           server-side rules for multi-phone games
   api/public.py      player-facing API (no login)
   api/admin.py       admin API
   services/          registry (manifests), sessions, scoring, leaderboards, nights, decks,

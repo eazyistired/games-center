@@ -33,6 +33,7 @@ export async function playView({ params, query, app }) {
   const saved = lsGet(`gc.settings.${gameId}`) || {};
   const st = {
     mode: game.modes[0],
+    deviceMode: "single",
     selected: [], // ordered player ids
     teams: [], // [{name, color, player_ids}]
     teamCount: Math.max(2, game.teams.min),
@@ -119,10 +120,11 @@ export async function playView({ params, query, app }) {
     }
     lsSet(`gc.settings.${gameId}`, st.settings);
     try {
-      const body = { game_id: gameId, mode: st.mode, player_ids: st.selected, settings: st.settings };
+      const body = { game_id: gameId, mode: st.mode, player_ids: st.selected, settings: st.settings, device_mode: st.deviceMode };
       if (st.mode === "teams") body.teams = st.teams;
       const s = await api("/api/sessions", { method: "POST", body });
-      location.href = s.game.url;
+      if (s.device_mode === "multi") location.hash = `/sessions/${s.id}`; // lobby: everyone joins
+      else location.href = s.game.url;
     } catch (e) {
       toast(e.message, "bad");
       btn.disabled = false;
@@ -249,6 +251,11 @@ export async function playView({ params, query, app }) {
       err || `Start ${game.emoji} ${game.name}`);
     mount(root,
       topbar(`${game.emoji} ${game.name}`, "/"),
+      (game.devices || []).includes("multi") && h("div", { class: "stack", style: { gap: ".35rem" } },
+        seg([{ value: "single", label: "📱 One phone" }, { value: "multi", label: "📱📱 Everyone's phones" }], st.deviceMode, (v) => { st.deviceMode = v; render(); }),
+        h("div", { class: "tiny muted" }, st.deviceMode === "multi"
+          ? "Everyone plays on their own phone: after starting, people join from Live now on the home screen."
+          : "One phone runs the game and gets passed around.")),
       game.modes.length > 1 && h("div", { class: "row between" },
         seg(game.modes.map((m) => ({ value: m, label: m === "teams" ? "👥 Teams" : "🙋 Solo" })), st.mode, (m) => {
           st.mode = m;

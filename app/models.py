@@ -54,7 +54,7 @@ class GameSession(Base):
     night_id: Mapped[int] = mapped_column(ForeignKey("game_nights.id"), index=True)
     mode: Mapped[str] = mapped_column(String(10), default="solo")  # solo | teams
     settings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    # active -> finished | abandoned ; finished <-> void (admin)
+    # (lobby ->) active -> finished | abandoned ; finished <-> void (admin)
     status: Mapped[str] = mapped_column(String(12), default="active", index=True)
     progress: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=None)
     details: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=None)
@@ -104,6 +104,9 @@ class SessionParticipant(Base):
     score: Mapped[float | None] = mapped_column(Float, default=None)
     placement: Mapped[int | None] = mapped_column(Integer, default=None)
     points: Mapped[float | None] = mapped_column(Float, default=None)
+    # multi-phone play: the phone that holds this seat
+    device_id: Mapped[str | None] = mapped_column(String(64), default=None)
+    joined_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
 
     player: Mapped[Player] = relationship()
 
