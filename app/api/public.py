@@ -10,10 +10,10 @@ from sqlalchemy import func, select
 
 from .. import __version__
 from ..config import get_settings
-from ..models import Crew, Deck, Game, GameNight, GameSession, Player, utcnow
+from ..models import LIVE_STATUSES, Crew, Deck, Game, GameNight, GameSession, Player, utcnow
 from ..realtime import hub
+from ..services import collect, live, multi
 from ..services import leaderboards as lb
-from ..services import live, multi
 from ..services.decks import deck_out, words_for_session
 from ..services.nights import current_night_date
 from ..services.registry import deck_game, get_manifest, merged_settings
@@ -442,6 +442,58 @@ def act(db: DB, session_id: int, action: dict[str, Any], device: DeviceId) -> di
     return _multi(db, session_id, device, lambda s: multi.act(db, s, device, action))
 
 
+# ---------------------------------------------------------------- friends write the words
+
+
+class WordsIn(BaseModel):
+    text: str
+
+
+class SaveDeckIn(BaseModel):
+    name: str
+    emoji: str | None = None
+
+
+def _collect(db: DB, session_id: int, device: str | None, fn) -> dict[str, Any]:
+    s = get_session_or_404(db, session_id)
+    live.touch_device(db, device)
+    try:
+        fn(s)
+    except collect.CollectError as exc:
+        db.rollback()
+        raise HTTPException(exc.status, {"message": str(exc)}) from exc
+    db.commit()
+    hub.notify(s.id)
+    return full_session(db, s, device)
+
+
+@router.post("/sessions/{session_id}/words")
+def add_words(db: DB, session_id: int, body: WordsIn, device: DeviceId) -> dict[str, Any]:
+    """Add your own words while the game collects them (one per line)."""
+    return _collect(db, session_id, device, lambda s: collect.add_words(db, s, device, body.text))
+
+
+@router.delete("/sessions/{session_id}/words/{word_id}")
+def remove_word(db: DB, session_id: int, word_id: int, device: DeviceId) -> dict[str, Any]:
+    return _collect(db, session_id, device, lambda s: collect.delete_word(db, s, device, word_id))
+
+
+@router.post("/sessions/{session_id}/begin")
+def begin_session(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
+    """One-phone game that collected words: the host starts it."""
+    return _collect(db, session_id, device, lambda s: collect.begin(db, s, device))
+
+
+@router.post("/sessions/{session_id}/save-deck")
+def save_collected_deck(
+    db: DB, session_id: int, body: SaveDeckIn, device: DeviceId
+) -> dict[str, Any]:
+    """After the game: keep the friends' words as a normal custom deck."""
+    return _collect(
+        db, session_id, device, lambda s: collect.save_deck(db, s, body.name, body.emoji)
+    )
+
+
 # ---------------------------------------------------------------- devices ("who are you?")
 
 
@@ -613,7 +665,7 @@ def list_nights(db: DB, limit: int = 60) -> list[dict[str, Any]]:
         .where(
             GameNight.id.in_(
                 select(GameSession.night_id).where(
-                    GameSession.status.in_(["finished", "active", "lobby"])
+                    GameSession.status.in_(["finished", *LIVE_STATUSES])
                 )
             )
         )
@@ -628,7 +680,7 @@ def list_nights(db: DB, limit: int = 60) -> list[dict[str, Any]]:
         summary["live_count"] = db.scalar(
             select(func.count())
             .select_from(GameSession)
-            .where(GameSession.night_id == n.id, GameSession.status.in_(["active", "lobby"]))
+            .where(GameSession.night_id == n.id, GameSession.status.in_(LIVE_STATUSES))
         )
         out.append(summary)
     return out
@@ -645,7 +697,7 @@ def get_night(db: DB, night_id: int, device: DeviceId) -> dict[str, Any]:
         select(GameSession)
         .where(
             GameSession.night_id == night.id,
-            GameSession.status.in_(["finished", "active", "lobby"]),
+            GameSession.status.in_(["finished", *LIVE_STATUSES]),
         )
         .order_by(GameSession.started_at)
     )

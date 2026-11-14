@@ -5,20 +5,117 @@
   "description": "Phone on your forehead: guess the word from your friends' clues. Tilt down if you got it, tilt up to pass.",
   "min_players": 2,
   "max_players": 30,
-  "modes": ["solo", "teams"],
-  "teams": { "min": 2, "max": 4 },
-  "scoring": { "higher_is_better": true, "unit": "words" },
+  "modes": [
+    "solo",
+    "teams"
+  ],
+  "teams": {
+    "min": 2,
+    "max": 4
+  },
+  "scoring": {
+    "higher_is_better": true,
+    "unit": "words"
+  },
   "has_decks": true,
   "settings": [
-    { "key": "decks", "type": "decks", "label": "Decks", "help": "Pick none to use every deck", "default": [] },
-    { "key": "round_seconds", "type": "select", "label": "Turn length", "options": [
-      { "value": 45, "label": "45 s" }, { "value": 60, "label": "60 s" },
-      { "value": 90, "label": "90 s" }, { "value": 120, "label": "2 min" }
-    ], "default": 60 },
-    { "key": "rounds", "type": "select", "label": "Rounds", "help": "In each round everyone guesses once (teams: every member of the biggest team)", "options": [
-      { "value": 1, "label": "1" }, { "value": 2, "label": "2" }, { "value": 3, "label": "3" }
-    ], "default": 1 },
-    { "key": "tilt", "type": "bool", "label": "Tilt controls", "help": "Off = tap buttons only", "default": true },
-    { "key": "sounds", "type": "bool", "label": "Sounds", "default": true }
+    {
+      "key": "decks",
+      "type": "decks",
+      "label": "Decks",
+      "help": "Pick none to use every deck",
+      "default": [],
+      "hide_if": "collect_words"
+    },
+    {
+      "key": "collect_words",
+      "type": "bool",
+      "label": "✍️ Friends write the words",
+      "help": "Before the game, everyone adds their own words from their phone (used instead of the decks). You can save them as a deck afterwards.",
+      "default": false
+    },
+    {
+      "key": "collect_per_player",
+      "type": "select",
+      "label": "Words per person",
+      "show_if": "collect_words",
+      "options": [
+        {
+          "value": 3,
+          "label": "3"
+        },
+        {
+          "value": 5,
+          "label": "5"
+        },
+        {
+          "value": 8,
+          "label": "8"
+        },
+        {
+          "value": 10,
+          "label": "10"
+        }
+      ],
+      "default": 5
+    },
+    {
+      "key": "round_seconds",
+      "type": "select",
+      "label": "Turn length",
+      "options": [
+        {
+          "value": 45,
+          "label": "45 s"
+        },
+        {
+          "value": 60,
+          "label": "60 s"
+        },
+        {
+          "value": 90,
+          "label": "90 s"
+        },
+        {
+          "value": 120,
+          "label": "2 min"
+        }
+      ],
+      "default": 60
+    },
+    {
+      "key": "rounds",
+      "type": "select",
+      "label": "Rounds",
+      "help": "In each round everyone guesses once (teams: every member of the biggest team)",
+      "options": [
+        {
+          "value": 1,
+          "label": "1"
+        },
+        {
+          "value": 2,
+          "label": "2"
+        },
+        {
+          "value": 3,
+          "label": "3"
+        }
+      ],
+      "default": 1
+    },
+    {
+      "key": "tilt",
+      "type": "bool",
+      "label": "Tilt controls",
+      "help": "Off = tap buttons only",
+      "default": true
+    },
+    {
+      "key": "sounds",
+      "type": "bool",
+      "label": "Sounds",
+      "default": true
+    }
   ]
 }

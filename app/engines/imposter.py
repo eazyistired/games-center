@@ -64,9 +64,13 @@ class ImposterEngine(Engine):
             state["word_pos"] = 0
         word = state["words"][state["word_pos"]]
         state["word_pos"] += 1
-        fresh = [i for i in ids if i not in state["last_imposters"]]
+        # never make the author of the word (friends' words) the imposter
+        pool = [i for i in ids if i != word.get("author")]
+        if len(pool) < state["n_imp"]:
+            pool = ids
+        fresh = [i for i in pool if i not in state["last_imposters"]]
         ctx.rng.shuffle(fresh)
-        rest = [i for i in ids if i in state["last_imposters"]]
+        rest = [i for i in pool if i in state["last_imposters"]]
         ctx.rng.shuffle(rest)
         shift = state["round_no"] % len(ids)
         order = ids[shift:] + ids[:shift]

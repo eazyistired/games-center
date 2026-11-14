@@ -679,7 +679,11 @@ def _add_words(deck: Deck, text: str) -> int:
 
 @protected.get("/decks")
 def admin_decks(db: DB, game_id: str | None = None) -> list[dict[str, Any]]:
-    q = select(Deck).order_by(Deck.builtin.desc(), Deck.name)
+    q = (
+        select(Deck)
+        .where(~Deck.slug.startswith("session:"))
+        .order_by(Deck.builtin.desc(), Deck.name)
+    )
     if game_id:
         q = q.where(Deck.game_id == game_id)
     return [deck_out(db, d) for d in db.scalars(q)]

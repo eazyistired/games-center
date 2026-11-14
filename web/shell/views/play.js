@@ -123,7 +123,7 @@ export async function playView({ params, query, app }) {
       const body = { game_id: gameId, mode: st.mode, player_ids: st.selected, settings: st.settings, device_mode: st.deviceMode };
       if (st.mode === "teams") body.teams = st.teams;
       const s = await api("/api/sessions", { method: "POST", body });
-      if (s.device_mode === "multi") location.hash = `/sessions/${s.id}`; // lobby: everyone joins
+      if (s.device_mode === "multi" || s.status === "collecting") location.hash = `/sessions/${s.id}`; // lobby / words first
       else location.href = s.game.url;
     } catch (e) {
       toast(e.message, "bad");
@@ -221,9 +221,12 @@ export async function playView({ params, query, app }) {
     return h("div", null,
       h("div", { class: "section-title" }, h("h2", null, "Settings")),
       h("div", { class: "card stack" }, schema.map((f) => {
+        if (f.show_if && !st.settings[f.show_if]) return null;
+        if (f.hide_if && st.settings[f.hide_if]) return null;
         const value = st.settings[f.key];
         const set = (v) => { st.settings[f.key] = v; };
-        if (f.type === "bool") return switchField(f.label, !!value, set, f.help);
+        // a switch other fields depend on: re-render so they appear/disappear
+        if (f.type === "bool") return switchField(f.label, !!value, schema.some((x) => x.show_if === f.key || x.hide_if === f.key) ? (v) => { set(v); render(); } : set, f.help);
         if (f.type === "select") return h("div", { class: "stack", style: { gap: ".35rem" } },
           h("b", { class: "small" }, f.label), seg(f.options.map((o) => (typeof o === "object" ? o : { value: o, label: String(o) })), value, set),
           f.help && h("div", { class: "tiny muted" }, f.help));
