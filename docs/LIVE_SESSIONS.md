@@ -71,7 +71,14 @@ player phone◄─────► │ devices: who is who, who controls, last se
    - Engines (`app/engines`): `setup`, `act`, `view(viewer)`, `result`, `partial`; raw state
      never leaves the server (`progress` is hidden for multi-phone sessions)
    - Watch / 📺 TV mode for any live game (scoreboard + headline, live)
-3. **Imposter multi-phone**: private cards, clue order, secret voting, typed guess
+3. **Imposter multi-phone** ✅ (`app/engines/imposter.py`, `games/imposter/multi.js`)
+   - Phases: reveal (hold your own card, "Got it") → clues (phones show the order and "Your
+     turn") → discuss (timer; host starts the vote or asks for another lap) → secret vote (can be
+     changed until everyone voted; one runoff on a tie, still tied = nobody caught) → caught
+     imposter types the word (exact match ignoring case/accents counts, otherwise the host
+     judges) → reveal with who voted for whom
+   - Host menu: new word (redo round), finish now. Same points as the one-phone game.
+   - "Play again" from several phones reuses the open lobby
 4. **Tuned In multi-phone**: private target, live needle, bets from phones, TV dial
 5. **Three Rounds multi-phone**: clue-giver's own phone, live timer/score
 6. **Later**: late join ("ask to join"), parallel sessions polish, night scoreboard on TV

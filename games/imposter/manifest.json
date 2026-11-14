@@ -5,22 +5,105 @@
   "description": "Everyone gets the secret word except the imposter. Give one-word clues, then vote out who's faking it.",
   "min_players": 3,
   "max_players": 20,
-  "modes": ["solo"],
-  "scoring": { "higher_is_better": true, "unit": "points" },
+  "modes": [
+    "solo"
+  ],
+  "devices": [
+    "single",
+    "multi"
+  ],
+  "scoring": {
+    "higher_is_better": true,
+    "unit": "points"
+  },
   "has_decks": true,
   "deck_source": "heads-up",
   "settings": [
-    { "key": "decks", "type": "decks", "label": "Decks", "help": "Pick none to use every deck", "default": [] },
-    { "key": "rounds", "type": "select", "label": "Rounds", "help": "A new word and new imposter(s) every round", "options": [
-      { "value": 3, "label": "3" }, { "value": 5, "label": "5" }, { "value": 7, "label": "7" }, { "value": 10, "label": "10" }
-    ], "default": 5 },
-    { "key": "imposters", "type": "select", "label": "Imposters", "help": "2 imposters needs at least 5 players", "options": [
-      { "value": 1, "label": "1" }, { "value": 2, "label": "2" }
-    ], "default": 1 },
-    { "key": "hint", "type": "bool", "label": "Imposter sees the category", "help": "e.g. \"Animals\" - makes bluffing easier", "default": true },
-    { "key": "discussion", "type": "select", "label": "Discussion timer", "options": [
-      { "value": 0, "label": "Off" }, { "value": 120, "label": "2 min" }, { "value": 180, "label": "3 min" }, { "value": 300, "label": "5 min" }
-    ], "default": 180 },
-    { "key": "sounds", "type": "bool", "label": "Sounds", "default": true }
+    {
+      "key": "decks",
+      "type": "decks",
+      "label": "Decks",
+      "help": "Pick none to use every deck",
+      "default": []
+    },
+    {
+      "key": "rounds",
+      "type": "select",
+      "label": "Rounds",
+      "help": "A new word and new imposter(s) every round",
+      "options": [
+        {
+          "value": 3,
+          "label": "3"
+        },
+        {
+          "value": 5,
+          "label": "5"
+        },
+        {
+          "value": 7,
+          "label": "7"
+        },
+        {
+          "value": 10,
+          "label": "10"
+        }
+      ],
+      "default": 5
+    },
+    {
+      "key": "imposters",
+      "type": "select",
+      "label": "Imposters",
+      "help": "2 imposters needs at least 5 players",
+      "options": [
+        {
+          "value": 1,
+          "label": "1"
+        },
+        {
+          "value": 2,
+          "label": "2"
+        }
+      ],
+      "default": 1
+    },
+    {
+      "key": "hint",
+      "type": "bool",
+      "label": "Imposter sees the category",
+      "help": "e.g. \"Animals\" - makes bluffing easier",
+      "default": true
+    },
+    {
+      "key": "discussion",
+      "type": "select",
+      "label": "Discussion timer",
+      "options": [
+        {
+          "value": 0,
+          "label": "Off"
+        },
+        {
+          "value": 120,
+          "label": "2 min"
+        },
+        {
+          "value": 180,
+          "label": "3 min"
+        },
+        {
+          "value": 300,
+          "label": "5 min"
+        }
+      ],
+      "default": 180
+    },
+    {
+      "key": "sounds",
+      "type": "bool",
+      "label": "Sounds",
+      "default": true
+    }
   ]
 }
