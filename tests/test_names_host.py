@@ -181,14 +181,28 @@ def test_gone_host_is_replaced(lobby):
     assert host_of(c, sid, B)
 
 
-def test_become_host_needs_active_host_ok(lobby):
+def test_players_cannot_take_the_host_role(lobby):
     c, players, sid = lobby
-    c.post(f"/api/sessions/{sid}/heartbeat", headers=A)  # host active
-    assert c.post(f"/api/sessions/{sid}/takeover", headers=C).status_code == 403  # not joined
-    r = c.post(f"/api/sessions/{sid}/takeover", headers=B).json()
-    assert r["status"] == "pending"
-    req = c.get(f"/api/sessions/{sid}", headers=A).json()["requests"]
-    assert req[0]["host"] is True
-    c.post(req[0]["decide_url"], json={"approve": True}, headers=A)
-    assert c.get(f"/api/sessions/{sid}/takeover", headers=B).json()["status"] == "granted"
-    assert host_of(c, sid, B)
+    for path in ("takeover", "control"):
+        r = c.post(f"/api/sessions/{sid}/{path}", headers=B)
+        assert r.status_code == 403 and "Only the host" in r.json()["detail"]["message"]
+    assert host_of(c, sid, A) and not host_of(c, sid, B)
+
+
+def test_gone_host_is_replaced_during_the_game(lobby):
+    from app.services.multi import reassign_if_host_gone
+
+    c, players, sid = lobby
+    c.post(f"/api/sessions/{sid}/seat", json={"player_id": players[2]}, headers=C)
+    assert c.post(f"/api/sessions/{sid}/start", headers=A).json()["status"] == "active"
+    age(A, 5)  # the host's phone left mid-game
+    with SessionLocal() as db:
+        assert (
+            reassign_if_host_gone(
+                db, db.get(GameSession, sid), {B["X-Device-Id"], C["X-Device-Id"]}
+            )
+            is True
+        )
+        db.commit()
+    assert host_of(c, sid, B) or host_of(c, sid, C)
+    assert not host_of(c, sid, A)

@@ -18,7 +18,7 @@
 | Takeover | Anyone can take over; resumes at the start of the round/turn |
 | Takeover confirmation | If the phone in control is active, it must approve. If the person taking over is active as the same player on another phone, that phone must approve too. A locked/quiet phone (no heartbeat for 30 s) counts as approved. |
 | Spectating | Anyone can watch any live session (phase 2) |
-| Host role (multi-phone) | The host hands the 👑 to any joined player (no accept step). A player can ask to become host (the host approves if active, otherwise immediate). A lobby whose host phone leaves (offline + quiet) gets the next joined player as host. |
+| Host role (multi-phone) | Only the host can hand the 👑 to another joined player (no accept step); players can't request or take it. Everyone sees who the host is. If the host's phone leaves (offline + quiet) — in the lobby or mid-game — the next joined player becomes host automatically. Only the host (or, in one-phone games, the phone running the game) can discard a game. |
 | Idle sessions | Nobody in control for 2 h: auto-finished with the scores so far if at least one round was completed, otherwise abandoned |
 | Multi-phone rules | Server-side Python engines (secrets never reach the wrong phone, not even the host's) |
 | TV view | Planned (spectator/board view) |

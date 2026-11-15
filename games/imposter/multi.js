@@ -20,19 +20,8 @@ const send = (action) => GC.act(action).catch((e) => toast(e.message, "bad"));
 // ---------------------------------------------------------------- pieces
 function topBar() {
   return h("div", { class: "bar" },
-    v.is_host ? h("button", { class: "btn small ghost", onclick: hostMenu }, "👑 Host") : h("button", { class: "btn small ghost", onclick: playerMenu }, `${nm(v.me)} ▾`),
+    v.is_host ? h("button", { class: "btn small ghost", onclick: hostMenu }, "👑 Host") : h("span", { class: "badge" }, `👑 ${GC.hostName(session)}`),
     h("span", { class: "badge" }, `Round ${v.round} / ${v.rounds}`));
-}
-
-async function playerMenu() {
-  const choice = await modal(`${nm(v.me)}`, h("p", { class: "muted" }, "Need to take over the host controls (e.g. the host left)? The host is asked first if their phone is active."), [
-    { label: "👑 Become host", value: "host" },
-    { label: "Close", class: "primary", value: null },
-  ]);
-  if (choice !== "host") return;
-  toast("Asking the host…");
-  const r = await GC.becomeHost().catch((e) => { toast(e.message, "bad"); return null; });
-  if (r === "denied") toast("The host said no", "bad");
 }
 
 async function pickNewHost() {
