@@ -22,7 +22,8 @@ game; everyone's results land in shared leaderboards.
   - **Three Rounds**: teams; the same pool of words is described, then clued with one word,
     then mimed. Shares the Heads Up decks.
   - **Tuned In**: teams; the clue-giver sees a hidden target between two extremes, the team
-    turns a dial to find it, the other teams bet left/right.
+    turns a dial to find it, the other teams bet left/right. One phone or 📱📱 everyone's phones
+    (live needle on every phone and the TV).
 
 Stack: Python 3.12 · FastAPI · SQLite (Alembic migrations) · plain HTML/JS (no build step).
 

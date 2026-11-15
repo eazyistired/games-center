@@ -3,6 +3,7 @@ import { api } from "/static/api.js";
 import { h, mount, toast, modal, ago, fmtDate, empty, seg } from "/static/ui.js";
 import { go, rerender, refresh, onLeave, parseHash } from "../app.js";
 import { openSocket } from "/static/socket.js";
+import { dial, ends } from "/static/dial.js";
 import { topbar } from "./components.js";
 
 const ls = {
@@ -408,6 +409,9 @@ export async function watchView({ params, query }) {
         h("h1", { class: "logo watch-title" }, s.game.name),
         h("div", null, statusChip(s.live_status))),
       w.headline ? h("div", { class: "watch-headline center" }, w.headline) : null,
+      w.dial ? h("div", { class: "stack watch-dial" },
+        w.dial.left ? ends([w.dial.left, w.dial.right]) : null,
+        dial({ needle: w.dial.needle, target: w.dial.target, reveal: w.dial.target != null }).el) : null,
       rows.length
         ? h("div", { class: "card tight list watch-board" }, rows.map((r, i) => h("div", { class: "list-item" },
             h("span", { class: "watch-rank" }, ((rank) => ["🥇", "🥈", "🥉"][rank - 1] || rank)(rows.findIndex((x) => x.score === r.score) + 1)),
