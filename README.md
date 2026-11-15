@@ -10,7 +10,8 @@ game; everyone's results land in shared leaderboards.
 - **Shared lineups:** pick who's playing from a pool of people, reload the last lineup (or a
   saved crew) in one tap, add/remove people, split into teams (shuffle or skill-balanced).
 - **Leaderboards:** tonight / month / year / all time, overall and per game, game-night
-  recaps, player profiles.
+  recaps with awards, player profiles with badges and head-to-head, 🏛 hall of fame.
+- **📺 TV night board:** standings, live games, awards and a join QR on the big screen.
 - **Admin dashboard:** players, sessions (edit scores, void, delete), nights, games, word
   decks, scoring settings, backups, audit log.
 - **Games:** drop a folder into `games/`.
