@@ -5,6 +5,7 @@ import { playView } from "./views/play.js";
 import { resultsView } from "./views/results.js";
 import { boardsView, nightsView, nightView, playersView, playerView } from "./views/stats.js";
 import { sessionView, inviteView, watchView, startLive } from "./views/live.js";
+import { tvView, hallView } from "./views/tv.js";
 
 const app = document.getElementById("app");
 
@@ -22,6 +23,8 @@ const routes = [
   [/^\/results\/(\d+)$/, resultsView, "home"],
   [/^\/sessions\/(\d+)$/, sessionView, "nights"],
   [/^\/watch\/(\d+)$/, watchView, "nights"],
+  [/^\/tv$/, tvView, "nights"],
+  [/^\/hall$/, hallView, "boards"],
   [/^\/invite$/, inviteView, "home"],
   [/^\/boards$/, boardsView, "boards"],
   [/^\/nights$/, nightsView, "nights"],

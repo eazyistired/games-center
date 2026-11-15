@@ -158,6 +158,14 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Clue-giver's own phone (word, Got it / Skip, pause, review), live timer/count for everyone,
       server-side clock, host can end a turn
 
+### Fun stats + night board on the TV
+- [x] Night awards (MVP, most wins, wordsmith, sharpshooter, master of disguise, bridesmaid,
+      good sport) on the night page and the TV
+- [x] Profile: badges with progress, head-to-head, nemesis / favourite victim / best teammate
+- [x] 🏛 Hall of fame (monthly champions, most titles)
+- [x] 📺 `#/tv`: tonight's standings, live games (incl. the Tuned In dial), awards, latest
+      results, join QR; updates live
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

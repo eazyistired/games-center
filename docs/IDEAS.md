@@ -36,10 +36,12 @@ Most of these only need data that is already stored (`session_participants`, `se
 ## Left to do (as of the friends-words feature)
 - [x] **Phase 4: Tuned In on everyone's phones** (private target, live needle, bets, TV dial)
 - [x] **Phase 5: Three Rounds on everyone's phones** (clue-giver's own phone, live timer/score)
-- [ ] **Late join** ("ask to join" a running multi-phone game) and **night scoreboard on the TV**
+- [ ] **Late join** ("ask to join" a running multi-phone game)
+- [x] **Night scoreboard on the TV** (`#/tv`)
 - [ ] **Custom scale cards** for Tuned In (admin + friends' cards)
 - [ ] **Scorekeeper** for physical board games
-- [ ] Fun stats: badges, head-to-head, end-of-night awards, seasons (see above)
+- [x] Fun stats: badges, head-to-head, nemesis / best teammate, night awards, hall of fame
+- [ ] More fun: end-of-night awards slideshow, shareable recap image, Elo rating
 - [ ] **Real-phone tuning** after a few game nights: Heads Up tilt thresholds, "quiet after"
       seconds (Admin → Settings), takeover timing
 - [ ] `docs/HOME_SERVER.md`: fill in the items marked **(verify)** (app dataset path, host port)
