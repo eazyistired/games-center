@@ -15,7 +15,13 @@ def start(client, player_ids, mode="solo", teams=None, settings=None):
 def test_health_and_games(client):
     assert client.get("/api/health").json()["status"] == "ok"
     games = client.get("/api/games").json()
-    assert [g["id"] for g in games] == ["heads-up", "imposter", "three-rounds", "tuned-in"]
+    assert [g["id"] for g in games] == [
+        "heads-up",
+        "imposter",
+        "popular-opinion",
+        "three-rounds",
+        "tuned-in",
+    ]
     full = client.get("/api/games/heads-up").json()
     assert len(full["decks"]) == 9
     assert full["defaults"]["round_seconds"] == 60

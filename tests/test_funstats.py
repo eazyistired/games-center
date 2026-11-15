@@ -67,6 +67,7 @@ def test_night_awards(admin, players):
     assert who("bulls") == [players[3]] and who("escapes") == [players[3]]
     assert who("seconds") == [players[1]]  # 2 second places
     assert "sport" not in awards  # everyone won something (Cata with her team)
+    assert "minds" not in awards  # no Popular Opinion played
     assert all(a["emoji"] and a["title"] for a in awards.values())
 
 
