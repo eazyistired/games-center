@@ -33,7 +33,7 @@ export async function playView({ params, query, app }) {
   const saved = lsGet(`gc.settings.${gameId}`) || {};
   const st = {
     mode: game.modes[0],
-    deviceMode: "single",
+    deviceMode: (game.devices || ["single"])[0], // phones-only games start in "multi"
     selected: [], // ordered player ids
     teams: [], // [{name, color, player_ids}]
     teamCount: Math.max(2, game.teams.min),
@@ -254,7 +254,8 @@ export async function playView({ params, query, app }) {
       err || `Start ${game.emoji} ${game.name}`);
     mount(root,
       topbar(`${game.emoji} ${game.name}`, "/"),
-      (game.devices || []).includes("multi") && h("div", { class: "stack", style: { gap: ".35rem" } },
+      (game.devices || []).length === 1 && game.devices[0] === "multi" && h("div", { class: "tiny muted" }, "📱📱 Played on everyone's phones: after starting, people join from Live now on the home screen."),
+      (game.devices || []).includes("multi") && (game.devices || []).includes("single") && h("div", { class: "stack", style: { gap: ".35rem" } },
         seg([{ value: "single", label: "📱 One phone" }, { value: "multi", label: "📱📱 Everyone's phones" }], st.deviceMode, (v) => { st.deviceMode = v; render(); }),
         h("div", { class: "tiny muted" }, st.deviceMode === "multi"
           ? "Everyone plays on their own phone: after starting, people join from Live now on the home screen."

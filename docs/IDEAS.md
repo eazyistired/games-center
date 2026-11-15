@@ -19,8 +19,7 @@ Most of these only need data that is already stored (`session_participants`, `se
 `word_plays`, `sessions.details`), so they can be built without schema changes.
 
 ## Games
-- **Majority / minority**: a question ("Pineapple on pizza?"), everyone picks secretly on their
-  phone; you score for guessing what most people picked (or a "minority" variant). Multi-phone.
+- ✅ **Majority / minority** → built as **Popular Opinion** (a "minority" variant could come later).
 - **Rank it**: the TV shows 5 items, everyone orders them on their phone ("worst to best
   snack"); you score for how close your order is to the group's average order. Multi-phone + TV.
 

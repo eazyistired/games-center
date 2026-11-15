@@ -1,0 +1,902 @@
+{
+ "questions": [
+  {
+   "q": "Pineapple on pizza?",
+   "options": [
+    "🍍 Yes, absolutely",
+    "🙅 Crime against Italy"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Toilet paper: over or under?",
+   "options": [
+    "⬆️ Over",
+    "⬇️ Under"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Is a hot dog a sandwich?",
+   "options": [
+    "🌭 Yes",
+    "🙅 No",
+    "🤷 It's its own thing"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather fight one horse-sized duck or 100 duck-sized horses?",
+   "options": [
+    "🦆 One giant duck",
+    "🐴 100 tiny horses"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Cereal: milk first or cereal first?",
+   "options": [
+    "🥛 Milk first (monster)",
+    "🥣 Cereal first"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you sleep with socks on?",
+   "options": [
+    "🧦 Always",
+    "🦶 Never",
+    "🤷 Depends on the night"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather always be 10 minutes late or 20 minutes early?",
+   "options": [
+    "🐢 10 min late",
+    "🐇 20 min early"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Is water wet?",
+   "options": [
+    "💧 Yes",
+    "🙅 No",
+    "🤯 Stop it"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Best way to eat fries?",
+   "options": [
+    "🍟 Ketchup",
+    "🥫 Mayo",
+    "🧂 Plain",
+    "🍦 Dipped in ice cream"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather have no phone or no fridge for a month?",
+   "options": [
+    "📵 No phone",
+    "🧊 No fridge"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "How many unread emails do you have?",
+   "options": [
+    "📭 Under 10",
+    "📬 Hundreds",
+    "📮 Thousands, I've given up"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you talk to your pets like they're people?",
+   "options": [
+    "🐶 Full conversations",
+    "🤐 Like a normal person"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you survive a zombie apocalypse?",
+   "options": [
+    "🧟 First to go",
+    "🪓 Leader of the survivors",
+    "🏃 Somewhere in between"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Shower: morning or night?",
+   "options": [
+    "🌅 Morning",
+    "🌙 Night",
+    "🚿 Both, I'm a fish"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather be able to talk to animals or speak every language?",
+   "options": [
+    "🐾 Animals",
+    "🌍 Every language"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you reply 'on my way' when you haven't left yet?",
+   "options": [
+    "😇 Never",
+    "😏 Every single time"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you eat a bug for 100 euros?",
+   "options": [
+    "🐛 Easy money",
+    "🤢 Absolutely not"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Best pizza crust?",
+   "options": [
+    "🍕 Thin and crispy",
+    "🍞 Thick and fluffy",
+    "🧀 Stuffed crust"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather have a rewind button or a pause button for your life?",
+   "options": [
+    "⏪ Rewind",
+    "⏸️ Pause"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you put ketchup on scrambled eggs?",
+   "options": [
+    "🍳 Yes",
+    "🙅 That's illegal"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Is it OK to recline your seat on a plane?",
+   "options": [
+    "💺 Of course",
+    "😤 Never"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather lose your sense of taste or your sense of smell?",
+   "options": [
+    "👅 Taste",
+    "👃 Smell"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Sock and shoe order?",
+   "options": [
+    "🧦🧦👟👟 Sock, sock, shoe, shoe",
+    "🧦👟🧦👟 Sock, shoe, sock, shoe"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you sing in the shower?",
+   "options": [
+    "🎤 Full concert",
+    "🤫 Silent"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather know when you'll die or how you'll die?",
+   "options": [
+    "📅 When",
+    "❓ How",
+    "🙈 Neither, thanks"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Coffee or tea?",
+   "options": [
+    "☕ Coffee",
+    "🍵 Tea",
+    "🥤 Energy drink, I'm unwell"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather never use social media again or never watch another movie?",
+   "options": [
+    "📱 Lose social media",
+    "🎬 Lose movies"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you eat the pizza crust?",
+   "options": [
+    "✅ Always",
+    "🗑️ Leave it",
+    "🐕 Give it to the dog"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Is cereal a soup?",
+   "options": [
+    "🥣 Yes",
+    "🙅 No"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather have unlimited free flights or unlimited free food?",
+   "options": [
+    "✈️ Flights",
+    "🍔 Food"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "How long can you go without checking your phone?",
+   "options": [
+    "⏱️ Minutes",
+    "🕐 An hour",
+    "🧘 All day"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather be famous or rich?",
+   "options": [
+    "🌟 Famous",
+    "💰 Rich"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Best season?",
+   "options": [
+    "🌸 Spring",
+    "☀️ Summer",
+    "🍂 Autumn",
+    "❄️ Winter"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather have a dragon or be a dragon?",
+   "options": [
+    "🐉 Have one",
+    "🔥 Be one"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you read the terms and conditions?",
+   "options": [
+    "📜 Every word",
+    "😂 Nobody does"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather time travel to the past or the future?",
+   "options": [
+    "🏛️ Past",
+    "🚀 Future"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Is it acceptable to wear socks with sandals?",
+   "options": [
+    "🧦 Fashion statement",
+    "🚫 Never"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather sweat mayonnaise or cry ketchup?",
+   "options": [
+    "🥪 Sweat mayo",
+    "🍅 Cry ketchup"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Best way to spend a Sunday?",
+   "options": [
+    "🛋️ Sofa all day",
+    "🥾 Outdoors",
+    "🍻 Brunch with friends"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather be the funniest or the smartest person in the room?",
+   "options": [
+    "😂 Funniest",
+    "🧠 Smartest"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you double-dip?",
+   "options": [
+    "🍟 Proudly",
+    "🙅 Never in public"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather have hiccups forever or always feel like you need to sneeze?",
+   "options": [
+    "😖 Hiccups",
+    "🤧 Almost-sneeze"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you make your bed every morning?",
+   "options": [
+    "🛏️ Every day",
+    "🌀 What's a made bed?"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather live without music or without TV?",
+   "options": [
+    "🎵 Without music",
+    "📺 Without TV"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Pancakes or waffles?",
+   "options": [
+    "🥞 Pancakes",
+    "🧇 Waffles"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather fight a kangaroo or an ostrich?",
+   "options": [
+    "🦘 Kangaroo",
+    "🦤 Ostrich"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you go to space if you had the chance?",
+   "options": [
+    "🚀 In a heartbeat",
+    "🌍 I'll stay here"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Is a fish a pet?",
+   "options": [
+    "🐟 Of course",
+    "🙅 It's decoration"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather have fingers as long as legs or legs as long as fingers?",
+   "options": [
+    "🖐️ Long fingers",
+    "🦵 Tiny legs"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "How do you eat a KitKat?",
+   "options": [
+    "🍫 Break the fingers",
+    "😋 Bite the whole thing"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather always have to sing instead of speak, or dance everywhere you walk?",
+   "options": [
+    "🎤 Sing",
+    "💃 Dance"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you name your plants?",
+   "options": [
+    "🪴 They all have names",
+    "🌱 They're plants"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather be invisible or be able to fly?",
+   "options": [
+    "👻 Invisible",
+    "🦅 Fly"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Who's the worst driver in this room?",
+   "options": [
+    "🚗 Me, honestly",
+    "👀 Someone else here",
+    "🙈 Not answering that"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather eat only pizza or only burgers forever?",
+   "options": [
+    "🍕 Pizza",
+    "🍔 Burgers"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you clap when the plane lands?",
+   "options": [
+    "👏 Always",
+    "😬 Never"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather have a personal chef or a personal driver?",
+   "options": [
+    "👨‍🍳 Chef",
+    "🚘 Driver"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Is it OK to put pineapple in a cake?",
+   "options": [
+    "🍍 Yes",
+    "🙅 No"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather have a third eye or a third arm?",
+   "options": [
+    "👁️ Third eye",
+    "💪 Third arm"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Best snack while watching a movie?",
+   "options": [
+    "🍿 Popcorn",
+    "🍫 Chocolate",
+    "🥨 Something salty",
+    "🍕 A whole meal"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather never be cold or never be hot again?",
+   "options": [
+    "🔥 Never cold",
+    "❄️ Never hot"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you check the fridge again hoping new food appeared?",
+   "options": [
+    "🔁 All the time",
+    "🧐 I'm rational"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather live in a treehouse or a houseboat?",
+   "options": [
+    "🌳 Treehouse",
+    "🛥️ Houseboat"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Do you say 'you too' when the waiter says 'enjoy your meal'?",
+   "options": [
+    "😅 Every time",
+    "😎 Never happened"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather lose your keys or your phone once a week?",
+   "options": [
+    "🔑 Keys",
+    "📱 Phone"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Is it acceptable to eat pizza with a knife and fork?",
+   "options": [
+    "🍴 Sure",
+    "😱 Absolutely not"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Would you rather be a cat or a dog for a day?",
+   "options": [
+    "🐱 Cat",
+    "🐶 Dog"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "How many alarms do you set in the morning?",
+   "options": [
+    "⏰ Just one",
+    "🔔 Two or three",
+    "🚨 Five or more"
+   ],
+   "spicy": false
+  },
+  {
+   "q": "Lights on or lights off?",
+   "options": [
+    "💡 On",
+    "🌑 Off",
+    "🕯️ Candles, obviously"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever sent a flirty text to the wrong person?",
+   "options": [
+    "🙋 Guilty",
+    "😇 Never"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather your browser history or your camera roll go public?",
+   "options": [
+    "🌐 Browser history",
+    "📸 Camera roll"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Morning sex or night sex?",
+   "options": [
+    "🌅 Morning",
+    "🌙 Night",
+    "🕛 Whenever, I'm not picky"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever kissed someone in this room?",
+   "options": [
+    "💋 Yes",
+    "🙅 No",
+    "🤐 Taking the fifth"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather date someone too clingy or too distant?",
+   "options": [
+    "🦑 Too clingy",
+    "🧊 Too distant"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Ever pretended to be asleep to avoid... activity?",
+   "options": [
+    "😴 Yes",
+    "😏 Never, I'm always ready"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Best place for a first date?",
+   "options": [
+    "🍷 Wine bar",
+    "🎬 Cinema",
+    "🥾 A walk",
+    "🛋️ Netflix at mine"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather have amazing chemistry or a great conversation?",
+   "options": [
+    "🔥 Chemistry",
+    "💬 Conversation"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever hooked up with an ex 'just once more'?",
+   "options": [
+    "🔁 Yes",
+    "🙅 Never"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Car, shower or kitchen table?",
+   "options": [
+    "🚗 Car",
+    "🚿 Shower",
+    "🍽️ Kitchen table",
+    "🛏️ The bed is fine, thanks"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather your parents read your texts or your ex?",
+   "options": [
+    "👪 Parents",
+    "💔 Ex"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Ever had a crush on a friend's partner?",
+   "options": [
+    "😳 Maybe…",
+    "🙅 Never"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Do you snoop on your partner's phone?",
+   "options": [
+    "🕵️ Sometimes",
+    "😇 Never"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather never kiss again or never have sex again?",
+   "options": [
+    "💋 No more kissing",
+    "🚫 No more sex"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever been caught in the act?",
+   "options": [
+    "🚨 Yes, mortifying",
+    "😎 Never caught"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Ideal number of dates before sleeping together?",
+   "options": [
+    "1️⃣ First date",
+    "3️⃣ Around three",
+    "🔟 Take it slow"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever had a one-night stand?",
+   "options": [
+    "🌙 Yes",
+    "🙅 No",
+    "🤷 Define 'one night'"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather be a great kisser or great in bed?",
+   "options": [
+    "💋 Great kisser",
+    "🛏️ Great in bed"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Ever drunk-texted 'I miss you'?",
+   "options": [
+    "📱 Yes, regret",
+    "🥂 Never"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Handcuffs: yes or no?",
+   "options": [
+    "⛓️ Yes",
+    "🙅 No",
+    "🤭 Only fluffy ones"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever lied about your 'number'?",
+   "options": [
+    "🔢 Rounded down",
+    "🔢 Rounded up",
+    "😇 Always honest"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather date a great cook or a great dancer?",
+   "options": [
+    "👨‍🍳 Cook",
+    "💃 Dancer"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Ever been on a date and planned your escape halfway through?",
+   "options": [
+    "🏃 Yes",
+    "🙅 Never"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather have a partner who's too loud or too quiet in bed?",
+   "options": [
+    "📢 Too loud",
+    "🤫 Too quiet"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you join a nudist beach for a day?",
+   "options": [
+    "🏖️ Why not",
+    "🙈 Never"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever skinny-dipped?",
+   "options": [
+    "🌊 Yes",
+    "🙅 Not yet"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Dirty talk: hot or awkward?",
+   "options": [
+    "🔥 Hot",
+    "😬 Awkward"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever faked it?",
+   "options": [
+    "🎭 Guilty",
+    "😇 Never"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather sleep with the lights on forever or never hug again?",
+   "options": [
+    "💡 Lights on",
+    "🤗 No more hugs"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Ever had a crush on a teacher or boss?",
+   "options": [
+    "😳 Yes",
+    "🙅 No"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Tinder bio: honest or flattering?",
+   "options": [
+    "📜 Totally honest",
+    "✨ Strategically flattering"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather your partner be jealous or completely indifferent?",
+   "options": [
+    "😤 Jealous",
+    "😐 Indifferent"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Ever woken up not remembering how you got home?",
+   "options": [
+    "🍻 Yes",
+    "🙅 No"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Hot take: sex is better…",
+   "options": [
+    "🍷 After a few drinks",
+    "🧘 Totally sober"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather date someone with terrible taste in music or terrible taste in food?",
+   "options": [
+    "🎵 Music",
+    "🍔 Food"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever sent a nude?",
+   "options": [
+    "📸 Yes",
+    "🙅 No",
+    "🤐 Next question"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Have you ever been the 'other person'?",
+   "options": [
+    "😬 Yes",
+    "🙅 No",
+    "🤐 Pass"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Would you rather spend a night with your celebrity crush or get 10,000 euros?",
+   "options": [
+    "⭐ The crush",
+    "💶 The money"
+   ],
+   "spicy": true
+  },
+  {
+   "q": "Who in this room would be the wildest in bed?",
+   "options": [
+    "😈 Me",
+    "👀 Someone else here",
+    "🙈 Not answering"
+   ],
+   "spicy": true
+  }
+ ]
+}

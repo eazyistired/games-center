@@ -1,0 +1,19 @@
+{
+  "id": "popular-opinion",
+  "name": "Popular Opinion",
+  "emoji": "📊",
+  "description": "A question, everyone answers secretly, then guess what MOST people said. Score for reading the room.",
+  "min_players": 3,
+  "max_players": 30,
+  "modes": ["solo"],
+  "devices": ["multi"],
+  "scoring": { "higher_is_better": true, "unit": "points" },
+  "settings": [
+    { "key": "rounds", "type": "select", "label": "Questions", "options": [
+      { "value": 5, "label": "5" }, { "value": 8, "label": "8" }, { "value": 10, "label": "10" }, { "value": 15, "label": "15" }
+    ], "default": 8 },
+    { "key": "spicy", "type": "bool", "label": "🔞 Spicy questions", "help": "Adults only: dating, bedroom, drunk stories, embarrassing confessions", "default": false },
+    { "key": "show_names", "type": "bool", "label": "Show who picked what", "help": "Off = only the numbers are revealed (recommended with spicy questions if people are shy)", "default": true },
+    { "key": "sounds", "type": "bool", "label": "Sounds", "default": true }
+  ]
+}

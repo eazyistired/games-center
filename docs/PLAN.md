@@ -166,6 +166,11 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] 📺 `#/tv`: tonight's standings, live games (incl. the Tuned In dial), awards, latest
       results, join QR; updates live
 
+### Popular Opinion (everyone's phones only)
+- [x] Question with 2-4 options; everyone secretly answers AND guesses the majority; +1 per
+      correct guess (ties: every top option counts); reveal with bars, names (optional),
+      🐺 lone wolf; 68 everyday + 40 🔞 spicy questions (spicy off by default); 🧠 Mind reader award
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

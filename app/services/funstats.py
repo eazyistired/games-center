@@ -45,7 +45,7 @@ def _sessions(
 def _game_counters(sessions: list[GameSession]) -> dict[str, Counter]:
     """words (Heads Up guesser / Three Rounds clue-giver), bullseyes (Tuned In clue-giver),
     escapes (Imposter not caught)."""
-    words, bulls, escapes = Counter(), Counter(), Counter()
+    words, bulls, escapes, minds = Counter(), Counter(), Counter(), Counter()
     for s in sessions:
         d = s.details or {}
         if s.game_id in ("heads-up", "three-rounds"):
@@ -55,12 +55,16 @@ def _game_counters(sessions: list[GameSession]) -> dict[str, Counter]:
             for t in d.get("turns") or []:
                 if t.get("points") == 4 and t.get("player_id") is not None:
                     bulls[int(t["player_id"])] += 1
+        elif s.game_id == "popular-opinion":
+            for r in d.get("rounds") or []:
+                for pid, n in (r.get("points") or {}).items():
+                    minds[int(pid)] += int(n or 0)
         elif s.game_id == "imposter":
             for r in d.get("rounds") or []:
                 for imp in r.get("imposters") or []:
                     if imp not in (r.get("accused") or []):
                         escapes[int(imp)] += 1
-    return {"words": words, "bulls": bulls, "escapes": escapes}
+    return {"words": words, "bulls": bulls, "escapes": escapes, "minds": minds}
 
 
 # ---------------------------------------------------------------- night awards
@@ -71,6 +75,7 @@ AWARDS = [
     ("words", "🗣️", "Wordsmith", "Most words in Heads Up & Three Rounds"),
     ("bulls", "🎯", "Sharpshooter", "Most bullseyes in Tuned In"),
     ("escapes", "🕵️", "Master of disguise", "Got away as the imposter most often"),
+    ("minds", "🧠", "Mind reader", "Read the room best in Popular Opinion"),
     ("seconds", "🥈", "Always the bridesmaid", "Most second places"),
     ("sport", "🤝", "Good sport", "Most games played without a win"),
 ]
