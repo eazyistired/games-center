@@ -150,6 +150,10 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Host: hand over 👑 (lobby + Imposter host menu), "Become host" with approval, automatic
       hand-over when the host leaves a lobby
 
+### Tuned In on everyone's phones (phase 4)
+- [x] Private target for the clue-giver, live needle from teammates' phones, bets from the other
+      teams' phones, reveal everywhere, 📺 TV dial view
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

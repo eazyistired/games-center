@@ -34,8 +34,7 @@ Most of these only need data that is already stored (`session_participants`, `se
    joins via QR code.
 
 ## Left to do (as of the friends-words feature)
-- [ ] **Phase 4: Tuned In on everyone's phones**: private target on the clue-giver's phone, live
-      needle on every phone, bets from phones, TV dial view
+- [x] **Phase 4: Tuned In on everyone's phones** (private target, live needle, bets, TV dial)
 - [ ] **Phase 5: Three Rounds on everyone's phones**: clue-giver uses their own phone, live
       timer and score
 - [ ] **Late join** ("ask to join" a running multi-phone game) and **night scoreboard on the TV**

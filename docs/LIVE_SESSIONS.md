@@ -80,6 +80,12 @@ player phone◄─────► │ devices: who is who, who controls, last se
      judges) → reveal with who voted for whom
    - Host menu: new word (redo round), finish now. Same points as the one-phone game.
    - "Play again" from several phones reuses the open lobby
-4. **Tuned In multi-phone**: private target, live needle, bets from phones, TV dial
+4. **Tuned In multi-phone** ✅ (`app/engines/tuned_in.py`, `games/tuned-in/multi.js`)
+   - Clue phase: only the clue-giver's phone gets the card + target (swap card); others wait
+   - The clue-giver's teammates drag the needle on their own phones (throttled, ~8 updates/s),
+     it moves live on every phone and on the TV; anyone on the team locks it in
+   - Other teams bet ◀/▶ from their phones (host can reveal early); reveal on every phone;
+     the clue-giver or host goes on. Same scoring / "play to" rule as the one-phone game
+   - The dial is shared (`web/shared/dial.js`) by the one-phone game, the phones and the TV
 5. **Three Rounds multi-phone**: clue-giver's own phone, live timer/score
 6. **Later**: late join ("ask to join"), parallel sessions polish, night scoreboard on TV
