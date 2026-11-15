@@ -311,8 +311,7 @@ function lobbyBlock(s, redraw) {
           try { const out = await api(`/api/sessions/${s.id}/start`, { method: "POST" }); location.href = out.game.url; } catch (e) { toast(e.message, "bad"); }
         } }, !L.all_joined ? `Waiting for ${L.seats.length - joined} more…` : s.collect && !s.collect.ready ? `Need ${s.collect.min_total - s.collect.total} more words…` : "▶ Start the game")
       : L.my_seat ? h("div", { class: "card center small" }, "✅ You're in! The host will start the game when everyone has joined.") : null,
-    L.is_host ? h("p", { class: "tiny muted center", style: { margin: 0 } }, "Everyone opens the site (📲 Invite has the QR code), finds this game under Live now and taps their name. 👑 hands over the host role.") : null,
-    !L.is_host && L.my_seat ? h("button", { class: "btn small ghost", style: { alignSelf: "center" }, onclick: () => becomeHost(s, redraw) }, "👑 Become host") : null);
+    L.is_host ? h("p", { class: "tiny muted center", style: { margin: 0 } }, "Everyone opens the site (📲 Invite has the QR code), finds this game under Live now and taps their name. 👑 hands over the host role.") : null);
 }
 
 export async function makeHost(s, seat, redraw) {
@@ -323,21 +322,6 @@ export async function makeHost(s, seat, redraw) {
   } catch (e) { toast(e.message, "bad"); }
 }
 
-/** Ask to become host (the current host is asked if their phone is active). */
-export async function becomeHost(s, redraw) {
-  let r;
-  try { r = await api(`/api/sessions/${s.id}/takeover`, { method: "POST" }); } catch (e) { return toast(e.message, "bad"); }
-  const done = async (msg, kind) => { toast(msg, kind); redraw?.(await api(`/api/sessions/${s.id}`)); };
-  if (r.status === "granted") return done("👑 You're now the host", "good");
-  toast("Asked the host's phone…");
-  for (let i = 0; i < 40; i++) {
-    await new Promise((ok) => setTimeout(ok, 2000));
-    const st = await api(`/api/sessions/${s.id}/takeover`).catch(() => ({ status: "pending" }));
-    if (st.status === "granted") return done("👑 You're now the host", "good");
-    if (st.status === "denied") return toast("The host said no", "bad");
-    if (st.status === "none") return;
-  }
-}
 
 export async function sessionView({ params, app }) {
   let s = await api(`/api/sessions/${params[0]}`);
@@ -365,7 +349,8 @@ export async function sessionView({ params, app }) {
     } else if (s.status === "active") blocks.push(...singleActions(s));
     if (["active", "lobby", "collecting"].includes(s.status)) {
       blocks.push(h("a", { class: "btn block", href: `#/watch/${s.id}` }, "👀 Watch live"));
-      if (s.controlled_by_me || s.live_status === "paused") blocks.push(h("button", { class: "btn ghost block", onclick: () => discard(s) }, "🗑 Discard game"));
+      // only the host (👑 / the phone running a one-phone game) can discard
+      if (s.controlled_by_me) blocks.push(h("button", { class: "btn ghost block", onclick: () => discard(s) }, "🗑 Discard game"));
     }
     mount(root,
       topbar(`${s.game.emoji} ${s.game.name}`, true),

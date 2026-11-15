@@ -187,8 +187,13 @@ def transfer_host(db: Session, s: GameSession, device_id: str | None, player_id:
 
 
 def reassign_if_host_gone(db: Session, s: GameSession, online: set[str]) -> bool:
-    """Lobby whose host phone left (offline and quiet): the next joined player becomes host."""
-    if s.device_mode != "multi" or s.status != "lobby" or not s.controller_device_id:
+    """Lobby or running game whose host phone left (offline and quiet): the next joined player
+    becomes host. Players can't take the role themselves; only the host hands it over."""
+    if (
+        s.device_mode != "multi"
+        or s.status not in ("lobby", "active")
+        or not s.controller_device_id
+    ):
         return False
     if s.controller_device_id in online:
         return False

@@ -81,7 +81,7 @@ def close_idle(settings: Settings) -> None:
 
 
 def watch_hosts() -> None:
-    """Lobbies whose host phone left get the next joined player as host."""
+    """Lobbies and running multi-phone games whose host phone left get the next joined player."""
     from .models import GameSession
     from .services.multi import reassign_if_host_gone
 
@@ -89,7 +89,7 @@ def watch_hosts() -> None:
     with SessionLocal() as db:
         lobbies = db.scalars(
             select(GameSession).where(
-                GameSession.status == "lobby", GameSession.device_mode == "multi"
+                GameSession.status.in_(["lobby", "active"]), GameSession.device_mode == "multi"
             )
         ).all()
         for s in lobbies:

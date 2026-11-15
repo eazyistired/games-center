@@ -53,7 +53,7 @@ def test_creator_controls_and_others_are_blocked(admin, players):
     r = c.put(f"/api/sessions/{sid}/progress", json={"state": {"x": 1}}, headers=B)
     assert r.status_code == 409 and r.json()["detail"]["lost"]
     assert c.post(f"/api/sessions/{sid}/result", json={"scores": []}, headers=B).status_code == 409
-    assert c.post(f"/api/sessions/{sid}/abandon", headers=B).status_code == 409
+    assert c.post(f"/api/sessions/{sid}/abandon", headers=B).status_code == 403  # host only
     r = c.post(f"/api/sessions/{sid}/control", headers=B)
     assert r.status_code == 409 and r.json()["detail"]["needs_takeover"]
     # A saves with versions
@@ -203,3 +203,11 @@ def test_watch_scoreboard_for_one_phone_games(admin, players):
     w = c.get(f"/api/sessions/{sid}", headers=C).json()["watch"]
     assert w["headline"] == "1 of 3 turns played"
     assert [r["score"] for r in w["scoreboard"]] == [4, 1]
+
+
+def test_only_the_host_can_discard(admin, players):
+    c = admin
+    sid = new_session(c, players)["id"]
+    age_controller(sid)  # paused: still only the host's phone may discard it
+    assert c.post(f"/api/sessions/{sid}/abandon", headers=B).status_code == 403
+    assert c.post(f"/api/sessions/{sid}/abandon", headers=A).json()["status"] == "abandoned"
