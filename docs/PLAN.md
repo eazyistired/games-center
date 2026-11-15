@@ -154,6 +154,10 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Private target for the clue-giver, live needle from teammates' phones, bets from the other
       teams' phones, reveal everywhere, 📺 TV dial view
 
+### Three Rounds on everyone's phones (phase 5)
+- [x] Clue-giver's own phone (word, Got it / Skip, pause, review), live timer/count for everyone,
+      server-side clock, host can end a turn
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

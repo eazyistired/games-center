@@ -8,6 +8,10 @@
   "modes": [
     "teams"
   ],
+  "devices": [
+    "single",
+    "multi"
+  ],
   "teams": {
     "min": 2,
     "max": 4,
