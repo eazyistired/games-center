@@ -324,8 +324,8 @@ def claim_control(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
     live.touch_device(db, device)
     try:
-        if s.device_mode == "multi" and multi.seat_of(s, device) is None:
-            raise live.LiveError("Join the game first", status=403)
+        if s.device_mode == "multi" and not multi.is_host(s, device):
+            raise live.LiveError("Only the host can hand over the host role", status=403)
         live.claim_control(db, s, device)
     except live.LiveError as exc:
         db.commit()
@@ -348,8 +348,8 @@ def session_heartbeat(db: DB, session_id: int, device: DeviceId) -> dict[str, An
 def takeover(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
     live.touch_device(db, device)
-    if s.device_mode == "multi" and multi.seat_of(s, device) is None:
-        raise HTTPException(403, {"message": "Join the game first"})
+    if s.device_mode == "multi":  # the 👑 only moves when the host hands it over (or leaves)
+        raise HTTPException(403, {"message": "Only the host can hand over the host role"})
     try:
         out = live.request_takeover(db, s, device)
     except live.LiveError as exc:
@@ -679,9 +679,10 @@ def post_result(db: DB, session_id: int, body: ResultIn, device: DeviceId) -> di
 @router.post("/sessions/{session_id}/abandon")
 def abandon(db: DB, session_id: int, device: DeviceId) -> dict[str, Any]:
     s = get_session_or_404(db, session_id)
-    if s.status in ("active", "lobby"):
-        if s.controller_device_id != device and live.controller_active(s):
-            raise HTTPException(409, {"message": "This game is running on another phone"})
+    if s.status in LIVE_STATUSES:
+        # only the host (multi-phone 👑 / the phone running a one-phone game) may discard it
+        if s.controller_device_id and s.controller_device_id != device:
+            raise HTTPException(403, {"message": "Only the host can discard this game"})
         s.status = "abandoned"
         s.finished_at = None
         db.commit()

@@ -320,24 +320,16 @@
       return { close() { closed = true; clearInterval(ping); ws?.close(); } };
     },
 
-    /** Multi-phone: hand the 👑 host role to another joined player. */
+    /** Multi-phone: hand the 👑 host role to another joined player (host only). */
     async makeHost(playerId) {
       requireSession();
       return call(`/api/sessions/${sessionId}/host`, "POST", { player_id: playerId });
     },
 
-    /** Multi-phone: ask to become host. Resolves "granted" | "denied" | "timeout". */
-    async becomeHost() {
-      requireSession();
-      const r = await call(`/api/sessions/${sessionId}/takeover`, "POST");
-      if (r.status === "granted") return "granted";
-      for (let i = 0; i < 40; i++) {
-        await new Promise((ok) => setTimeout(ok, 2000));
-        const st = await call(`/api/sessions/${sessionId}/takeover`).catch(() => ({ status: "pending" }));
-        if (st.status === "granted" || st.status === "denied") return st.status;
-        if (st.status === "none") return "timeout";
-      }
-      return "timeout";
+    /** Multi-phone: name of the current host (everyone sees who has the 👑). */
+    hostName(session) {
+      const h = (session?.lobby?.seats || []).find((x) => x.host);
+      return h ? `${h.emoji} ${h.name}` : "the host";
     },
 
     /** Multi-phone: send an action to the server engine. Resolves with the updated session. */

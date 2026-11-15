@@ -147,8 +147,9 @@ winner-takes-all. Changing the formula recalculates history.
 ### One phone per name + host role
 - [x] Names: owner phone must allow a move (30 min hold, setting), 3 denials → 5 min cooldown,
       📱 "in use" marker, seats move with the name, admin "Release from phone"
-- [x] Host: hand over 👑 (lobby + Imposter host menu), "Become host" with approval, automatic
-      hand-over when the host leaves a lobby
+- [x] Host: only the host hands over the 👑 (players can't request it), everyone sees who's host,
+      automatic hand-over when the host's phone leaves (lobby and mid-game); only the host can
+      discard a game
 
 ### Tuned In on everyone's phones (phase 4)
 - [x] Private target for the clue-giver, live needle from teammates' phones, bets from the other

@@ -43,19 +43,11 @@ async function menu() {
         [...others.map((x) => ({ label: `${x.emoji} ${x.name}`, value: x.player_id })), { label: "Cancel", class: "ghost", value: null }]);
       if (id != null) GC.makeHost(id).then(() => toast(`👑 ${nm(id)} is now the host`, "good")).catch((e) => toast(e.message, "bad"));
     }
-    return;
-  }
-  const choice = await modal(nm(v.me), h("p", { class: "muted" }, "Need the host controls (e.g. the host left)? The host is asked first if their phone is active."), [
-    { label: "👑 Become host", value: "host" }, { label: "Close", class: "primary", value: null }]);
-  if (choice === "host") {
-    toast("Asking the host…");
-    const r = await GC.becomeHost().catch((e) => { toast(e.message, "bad"); return null; });
-    if (r === "denied") toast("The host said no", "bad");
   }
 }
 
 const topBar = () => h("div", { class: "bar" },
-  h("button", { class: "btn small ghost", onclick: menu }, v.is_host ? "👑 Host" : `${nm(v.me)} ▾`),
+  v.is_host ? h("button", { class: "btn small ghost", onclick: menu }, "👑 Host") : h("span", { class: "badge" }, `👑 ${GC.hostName(session)}`),
   h("span", { class: "badge" }, `Turn ${v.turn} · play to ${v.play_to}`));
 
 // ---------------------------------------------------------------- phases
