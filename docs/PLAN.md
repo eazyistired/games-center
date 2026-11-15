@@ -150,6 +150,27 @@ winner-takes-all. Changing the formula recalculates history.
 - [x] Host: hand over 👑 (lobby + Imposter host menu), "Become host" with approval, automatic
       hand-over when the host leaves a lobby
 
+### Tuned In on everyone's phones (phase 4)
+- [x] Private target for the clue-giver, live needle from teammates' phones, bets from the other
+      teams' phones, reveal everywhere, 📺 TV dial view
+
+### Three Rounds on everyone's phones (phase 5)
+- [x] Clue-giver's own phone (word, Got it / Skip, pause, review), live timer/count for everyone,
+      server-side clock, host can end a turn
+
+### Fun stats + night board on the TV
+- [x] Night awards (MVP, most wins, wordsmith, sharpshooter, master of disguise, bridesmaid,
+      good sport) on the night page and the TV
+- [x] Profile: badges with progress, head-to-head, nemesis / favourite victim / best teammate
+- [x] 🏛 Hall of fame (monthly champions, most titles)
+- [x] 📺 `#/tv`: tonight's standings, live games (incl. the Tuned In dial), awards, latest
+      results, join QR; updates live
+
+### Popular Opinion (everyone's phones only)
+- [x] Question with 2-4 options; everyone secretly answers AND guesses the majority; +1 per
+      correct guess (ties: every top option counts); reveal with bars, names (optional),
+      🐺 lone wolf; 68 everyday + 40 🔞 spicy questions (spicy off by default); 🧠 Mind reader award
+
 ## Milestones
 1. **M1 Foundation** ✅
 2. **M2 Heads Up** ✅

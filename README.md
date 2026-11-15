@@ -10,7 +10,8 @@ game; everyone's results land in shared leaderboards.
 - **Shared lineups:** pick who's playing from a pool of people, reload the last lineup (or a
   saved crew) in one tap, add/remove people, split into teams (shuffle or skill-balanced).
 - **Leaderboards:** tonight / month / year / all time, overall and per game, game-night
-  recaps, player profiles.
+  recaps with awards, player profiles with badges and head-to-head, 🏛 hall of fame.
+- **📺 TV night board:** standings, live games, awards and a join QR on the big screen.
 - **Admin dashboard:** players, sessions (edit scores, void, delete), nights, games, word
   decks, scoring settings, backups, audit log.
 - **Games:** drop a folder into `games/`.
@@ -20,9 +21,13 @@ game; everyone's results land in shared leaderboards.
     last-chance guess. One phone or 📱📱 everyone's phones (secret voting). Shares the Heads Up
     decks.
   - **Three Rounds**: teams; the same pool of words is described, then clued with one word,
-    then mimed. Shares the Heads Up decks.
+    then mimed. One phone or 📱📱 everyone's phones (the clue-giver plays on their own phone).
+    Shares the Heads Up decks.
+  - **Popular Opinion** (📱📱 only): everyone answers a question secretly and guesses what most
+    people said; optional 🔞 spicy questions.
   - **Tuned In**: teams; the clue-giver sees a hidden target between two extremes, the team
-    turns a dial to find it, the other teams bet left/right.
+    turns a dial to find it, the other teams bet left/right. One phone or 📱📱 everyone's phones
+    (live needle on every phone and the TV).
 
 Stack: Python 3.12 · FastAPI · SQLite (Alembic migrations) · plain HTML/JS (no build step).
 

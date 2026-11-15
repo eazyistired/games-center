@@ -75,7 +75,7 @@ in a collecting phase; afterwards `GC.getWords()` returns only the friends' word
 actions), `onHidden()` (auto-pause when the phone locks), `goImmersive()`, `shuffle()`.
 
 ## Multi-phone games (optional)
-1. Manifest: `"devices": ["single", "multi"]`.
+1. Manifest: `"devices": ["single", "multi"]` (or `["multi"]` for a phones-only game).
 2. Engine in `app/engines/<game>.py` (see the docstring in `app/engines/__init__.py`), add the
    module to `builtin` in `load_engines()`:
    ```python

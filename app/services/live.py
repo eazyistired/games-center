@@ -145,7 +145,9 @@ def _grant(db: Session, s: GameSession, device_id: str) -> None:
 
 
 def heartbeat(db: Session, s: GameSession, device_id: str | None) -> dict[str, Any]:
-    in_control = bool(device_id) and s.controller_device_id == device_id and s.status in ("active", "lobby")
+    in_control = (
+        bool(device_id) and s.controller_device_id == device_id and s.status in ("active", "lobby")
+    )
     if in_control:
         s.controller_seen_at = utcnow()
     db.flush()

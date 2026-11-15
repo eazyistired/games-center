@@ -19,8 +19,7 @@ Most of these only need data that is already stored (`session_participants`, `se
 `word_plays`, `sessions.details`), so they can be built without schema changes.
 
 ## Games
-- **Majority / minority**: a question ("Pineapple on pizza?"), everyone picks secretly on their
-  phone; you score for guessing what most people picked (or a "minority" variant). Multi-phone.
+- ✅ **Majority / minority** → built as **Popular Opinion** (a "minority" variant could come later).
 - **Rank it**: the TV shows 5 items, everyone orders them on their phone ("worst to best
   snack"); you score for how close your order is to the group's average order. Multi-phone + TV.
 
@@ -34,14 +33,14 @@ Most of these only need data that is already stored (`session_participants`, `se
    joins via QR code.
 
 ## Left to do (as of the friends-words feature)
-- [ ] **Phase 4: Tuned In on everyone's phones**: private target on the clue-giver's phone, live
-      needle on every phone, bets from phones, TV dial view
-- [ ] **Phase 5: Three Rounds on everyone's phones**: clue-giver uses their own phone, live
-      timer and score
-- [ ] **Late join** ("ask to join" a running multi-phone game) and **night scoreboard on the TV**
+- [x] **Phase 4: Tuned In on everyone's phones** (private target, live needle, bets, TV dial)
+- [x] **Phase 5: Three Rounds on everyone's phones** (clue-giver's own phone, live timer/score)
+- [ ] **Late join** ("ask to join" a running multi-phone game)
+- [x] **Night scoreboard on the TV** (`#/tv`)
 - [ ] **Custom scale cards** for Tuned In (admin + friends' cards)
 - [ ] **Scorekeeper** for physical board games
-- [ ] Fun stats: badges, head-to-head, end-of-night awards, seasons (see above)
+- [x] Fun stats: badges, head-to-head, nemesis / best teammate, night awards, hall of fame
+- [ ] More fun: end-of-night awards slideshow, shareable recap image, Elo rating
 - [ ] **Real-phone tuning** after a few game nights: Heads Up tilt thresholds, "quiet after"
       seconds (Admin → Settings), takeover timing
 - [ ] `docs/HOME_SERVER.md`: fill in the items marked **(verify)** (app dataset path, host port)

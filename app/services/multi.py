@@ -270,7 +270,11 @@ def watch_info(db: Session, s: GameSession) -> dict[str, Any]:
         engine = get_engine(s.game_id)
         if engine:
             v = engine.view(copy.deepcopy(s.progress or {}), ctx_for(db, s), Viewer(None))
-            return {"headline": v.get("headline"), "scoreboard": v.get("scoreboard") or []}
+            return {
+                "headline": v.get("headline"),
+                "scoreboard": v.get("scoreboard") or [],
+                "dial": v.get("dial"),
+            }
     names = {p.player_id: p.player for p in s.participants}
     teams = {t.idx: t for t in s.teams}
     if s.status == "finished":

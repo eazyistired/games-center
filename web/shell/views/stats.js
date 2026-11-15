@@ -3,6 +3,7 @@ import { h, mount, seg, fmtNum, fmtDate, medal, empty, ago } from "/static/ui.js
 import { store, go } from "../app.js";
 import { topbar, boardTable, podium } from "./components.js";
 import { me, chooseMe, claimName, liveCard, statusChip } from "./live.js";
+import { awardCards } from "./tv.js";
 
 const PERIODS = [
   { value: "tonight", label: "Tonight" }, { value: "month", label: "Month" },
@@ -30,7 +31,7 @@ export async function boardsView({ query }) {
   }
 
   const view = h("div", { class: "stack" },
-    topbar("Leaderboards"),
+    topbar("Leaderboards", null, h("a", { class: "btn small", href: "#/hall" }, "🏛 Hall of fame")),
     seg(PERIODS, period, (v) => { period = v; load(); }),
     games.length > 0 && seg([{ value: "", label: "🌐 Overall" }, ...games.map((g) => ({ value: g.id, label: `${g.emoji} ${g.name}` }))], gameId, (v) => { gameId = v; load(); }),
     body);
@@ -41,7 +42,7 @@ export async function boardsView({ query }) {
 export async function nightsView() {
   const nights = await api("/api/nights");
   return h("div", { class: "stack" },
-    topbar("Game nights"),
+    topbar("Game nights", null, h("a", { class: "btn small", href: "#/tv" }, "📺 Tonight on TV")),
     nights.length ? nights.map((n) => h("div", { class: "card click", onclick: () => go(`/nights/${n.id}`) },
       h("div", { class: "row between" },
         h("div", null, h("h3", { style: { margin: 0 } }, n.label || fmtDate(n.date, { year: "numeric" })),
@@ -57,10 +58,11 @@ export async function nightView({ params }) {
   const n = await api(`/api/nights/${params[0]}`);
   const standings = n.standings.slice().sort((a, b) => b.total_points - a.total_points);
   return h("div", { class: "stack" },
-    topbar(n.label || fmtDate(n.date), "/nights"),
+    topbar(n.label || fmtDate(n.date), "/nights", h("a", { class: "btn small", href: `#/tv?night=${n.id}` }, "📺 TV")),
     h("div", { class: "muted small" }, `${fmtDate(n.date, { year: "numeric" })} · ${n.session_count} games · ${n.player_count} players`),
     podium(standings.map((e) => ({ emoji: e.player.emoji, name: e.player.name, sub: `${fmtNum(e.total_points)} pts` }))),
     standings.length ? h("div", { class: "card tight" }, boardTable(n.standings, { variant: "night" })) : null,
+    n.awards?.length ? h("div", null, h("div", { class: "section-title" }, h("h2", null, "🏅 Awards")), awardCards(n.awards)) : null,
     n.sessions.some((s) => s.status === "active") ? h("div", null,
       h("div", { class: "section-title" }, h("h2", null, h("span", { class: "live-dot" }), "Live now")),
       h("div", { class: "stack" }, n.sessions.filter((s) => s.status === "active").map(liveCard))) : null,
@@ -110,6 +112,23 @@ export async function playerView({ params }) {
       stat(o.sessions, "Games"), stat(o.wins, "Wins"), stat(o.win_rate == null ? "–" : `${o.win_rate}%`, "Win rate"),
       stat(fmtNum(o.avg_points), "Avg points"), stat(o.podiums, "Podiums"), stat(d.nights_attended, "Nights"),
       stat(d.best_win_streak, "Best streak")) : empty("🎲", "No games played yet."),
+    h("div", null, h("div", { class: "section-title" }, h("h2", null, "🏅 Badges"), h("span", { class: "small muted" }, `${d.badges.filter((b) => b.earned).length}/${d.badges.length}`)),
+      h("div", { class: "badges" }, d.badges.map((b) => h("div", { class: `badge-card ${b.earned ? "earned" : "locked"}`, title: b.description },
+        h("span", { class: "e" }, b.emoji), h("b", null, b.title), h("span", { class: "tiny muted" }, b.description),
+        !b.earned && h("div", { class: "bar" }, h("div", { style: { width: `${Math.round((100 * b.progress) / b.goal)}%` } })),
+        !b.earned && h("span", { class: "tiny muted" }, `${b.progress}/${b.goal}`))))),
+    (d.h2h.nemesis || d.h2h.victim || d.h2h.best_teammate) ? h("div", { class: "grid-2" },
+      d.h2h.nemesis && h("div", { class: "card tight center" }, h("div", { class: "tiny muted" }, "😈 Nemesis"), h("b", null, `${d.h2h.nemesis.player.emoji} ${d.h2h.nemesis.player.name}`),
+        h("div", { class: "tiny muted" }, `${d.h2h.nemesis.wins}–${d.h2h.nemesis.losses}`)),
+      d.h2h.victim && h("div", { class: "card tight center" }, h("div", { class: "tiny muted" }, "🎯 Favourite victim"), h("b", null, `${d.h2h.victim.player.emoji} ${d.h2h.victim.player.name}`),
+        h("div", { class: "tiny muted" }, `${d.h2h.victim.wins}–${d.h2h.victim.losses}`)),
+      d.h2h.best_teammate && h("div", { class: "card tight center" }, h("div", { class: "tiny muted" }, "🤝 Best teammate"), h("b", null, `${d.h2h.best_teammate.player.emoji} ${d.h2h.best_teammate.player.name}`),
+        h("div", { class: "tiny muted" }, `${d.h2h.best_teammate.win_rate}% wins together`))) : null,
+    d.h2h.rivals.length ? h("div", null, h("div", { class: "section-title" }, h("h2", null, "⚔️ Head-to-head")),
+      h("div", { class: "card tight list" }, d.h2h.rivals.slice(0, 10).map((r) => h("div", { class: "list-item click", onclick: () => go(`/players/${r.player.id}`) },
+        h("span", { class: "avatar" }, r.player.emoji), h("span", { class: "grow" }, r.player.name),
+        h("span", { class: "small" }, h("b", { style: { color: "#3ccf7f" } }, r.wins), " – ", h("b", { style: { color: "#ef6a50" } }, r.losses), r.ties ? h("span", { class: "muted" }, ` – ${r.ties}`) : null),
+        h("span", { class: "tiny muted", style: { width: "3.5rem", textAlign: "right" } }, `${r.games} games`))))) : null,
     d.per_game.length ? h("div", null, h("div", { class: "section-title" }, h("h2", null, "Per game")),
       h("div", { class: "card tight list" }, d.per_game.map((g) => h("div", { class: "list-item click", onclick: () => go(`/boards?game=${g.game.id}`) },
         h("span", { class: "avatar" }, g.game.emoji),

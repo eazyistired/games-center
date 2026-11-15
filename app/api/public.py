@@ -12,7 +12,7 @@ from .. import __version__
 from ..config import get_settings
 from ..models import LIVE_STATUSES, Crew, Deck, Game, GameNight, GameSession, Player, utcnow
 from ..realtime import hub
-from ..services import certs, collect, identity, live, multi
+from ..services import certs, collect, funstats, identity, live, multi
 from ..services import leaderboards as lb
 from ..services.decks import deck_out, words_for_session
 from ..services.nights import current_night_date
@@ -117,6 +117,8 @@ def player_profile(db: DB, player_id: int) -> dict[str, Any]:
         streak = streak + 1 if r["placement"] == 1 else 0
         best = max(best, streak)
     return {
+        "badges": funstats.badges(db, player_id),
+        "h2h": funstats.head_to_head(db, player_id),
         "player": player_dict(p),
         "overall": overall[0] if overall else None,
         "per_game": per_game,
@@ -777,6 +779,50 @@ def get_night(db: DB, night_id: int, device: DeviceId) -> dict[str, Any]:
         .order_by(GameSession.started_at)
     )
     out["sessions"] = [full_session(db, s, device) for s in sessions]
+    out["awards"] = funstats.night_awards(db, night.id)
+    return out
+
+
+@router.get("/hall-of-fame")
+def hall_of_fame(db: DB) -> dict[str, Any]:
+    return funstats.hall_of_fame(db)
+
+
+@router.get("/tv")
+def tv_board(db: DB, night_id: int | None = None) -> dict[str, Any]:
+    """Everything the night scoreboard on the TV shows (tonight unless night_id is given)."""
+    rt = get_runtime(db)
+    if night_id:
+        night = db.get(GameNight, night_id)
+        if night is None:
+            raise HTTPException(404, "Night not found")
+    else:
+        night = db.scalars(
+            select(GameNight)
+            .where(GameNight.date == current_night_date(db))
+            .order_by(GameNight.id.desc())
+        ).first()
+    out: dict[str, Any] = {
+        "site_name": rt["site_name"],
+        "app_url": rt["app_url"],
+        "tonight": current_night_date(db).isoformat(),
+    }
+    if night is None:
+        return out | {
+            "night": None,
+            "standings": [],
+            "awards": [],
+            "recent": [],
+            "games_played": 0,
+            "live": [],
+        }
+    out |= funstats.night_for_tv(db, night)
+    live = db.scalars(
+        select(GameSession)
+        .where(GameSession.night_id == night.id, GameSession.status.in_(LIVE_STATUSES))
+        .order_by(GameSession.started_at.desc())
+    )
+    out["live"] = [full_session(db, s, None) for s in live]
     return out
 
 

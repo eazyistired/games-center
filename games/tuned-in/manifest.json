@@ -5,17 +5,77 @@
   "description": "One player secretly sees where the target sits between two extremes and gives a clue. Their team turns the dial to find it.",
   "min_players": 4,
   "max_players": 24,
-  "modes": ["teams"],
-  "teams": { "min": 2, "max": 4, "min_size": 2 },
-  "scoring": { "higher_is_better": true, "unit": "points" },
+  "modes": [
+    "teams"
+  ],
+  "devices": [
+    "single",
+    "multi"
+  ],
+  "teams": {
+    "min": 2,
+    "max": 4,
+    "min_size": 2
+  },
+  "scoring": {
+    "higher_is_better": true,
+    "unit": "points"
+  },
   "settings": [
-    { "key": "play_to", "type": "select", "label": "Play to", "help": "Checked after every team has had the same number of turns", "options": [
-      { "value": 10, "label": "10 pts" }, { "value": 15, "label": "15 pts" }, { "value": 20, "label": "20 pts" }
-    ], "default": 10 },
-    { "key": "bet", "type": "bool", "label": "Other teams bet", "help": "Left or right of the needle? +1 if right (not on a bullseye)", "default": true },
-    { "key": "swaps", "type": "select", "label": "Card swaps per turn", "help": "The clue-giver can swap a card they can't think of a clue for", "options": [
-      { "value": 0, "label": "None" }, { "value": 1, "label": "1" }, { "value": 2, "label": "2" }
-    ], "default": 1 },
-    { "key": "sounds", "type": "bool", "label": "Sounds", "default": true }
+    {
+      "key": "play_to",
+      "type": "select",
+      "label": "Play to",
+      "help": "Checked after every team has had the same number of turns",
+      "options": [
+        {
+          "value": 10,
+          "label": "10 pts"
+        },
+        {
+          "value": 15,
+          "label": "15 pts"
+        },
+        {
+          "value": 20,
+          "label": "20 pts"
+        }
+      ],
+      "default": 10
+    },
+    {
+      "key": "bet",
+      "type": "bool",
+      "label": "Other teams bet",
+      "help": "Left or right of the needle? +1 if right (not on a bullseye)",
+      "default": true
+    },
+    {
+      "key": "swaps",
+      "type": "select",
+      "label": "Card swaps per turn",
+      "help": "The clue-giver can swap a card they can't think of a clue for",
+      "options": [
+        {
+          "value": 0,
+          "label": "None"
+        },
+        {
+          "value": 1,
+          "label": "1"
+        },
+        {
+          "value": 2,
+          "label": "2"
+        }
+      ],
+      "default": 1
+    },
+    {
+      "key": "sounds",
+      "type": "bool",
+      "label": "Sounds",
+      "default": true
+    }
   ]
 }
