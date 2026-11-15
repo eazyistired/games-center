@@ -35,8 +35,7 @@ Most of these only need data that is already stored (`session_participants`, `se
 
 ## Left to do (as of the friends-words feature)
 - [x] **Phase 4: Tuned In on everyone's phones** (private target, live needle, bets, TV dial)
-- [ ] **Phase 5: Three Rounds on everyone's phones**: clue-giver uses their own phone, live
-      timer and score
+- [x] **Phase 5: Three Rounds on everyone's phones** (clue-giver's own phone, live timer/score)
 - [ ] **Late join** ("ask to join" a running multi-phone game) and **night scoreboard on the TV**
 - [ ] **Custom scale cards** for Tuned In (admin + friends' cards)
 - [ ] **Scorekeeper** for physical board games

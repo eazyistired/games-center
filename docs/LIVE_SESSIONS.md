@@ -87,5 +87,10 @@ player phone◄─────► │ devices: who is who, who controls, last se
    - Other teams bet ◀/▶ from their phones (host can reveal early); reveal on every phone;
      the clue-giver or host goes on. Same scoring / "play to" rule as the one-phone game
    - The dial is shared (`web/shared/dial.js`) by the one-phone game, the phones and the TV
-5. **Three Rounds multi-phone**: clue-giver's own phone, live timer/score
+5. **Three Rounds multi-phone** ✅ (`app/engines/three_rounds.py`, `games/three-rounds/multi.js`)
+   - The clue-giver plays on their own phone: only that phone gets the word (Got it / Skip /
+     pause / review); everyone else sees the round rule, live timer, the team's count, the hat
+   - The server keeps the clock (3 s countdown, 1.5 s grace at the buzzer); host can end a turn
+     if the clue-giver's phone disappears. Same rules as one phone (skips leave the game,
+     time-out word back in the hat, leftover time carries into the next round, friends' words)
 6. **Later**: late join ("ask to join"), parallel sessions polish, night scoreboard on TV

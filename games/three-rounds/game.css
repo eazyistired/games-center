@@ -55,3 +55,6 @@ body { touch-action: manipulation; user-select: none; -webkit-user-select: none;
 .rounds-mini { display: flex; gap: .35rem; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .pool-meter { font-weight: 700; color: var(--muted); }
 .card.list, .card .list-item { text-align: left; }
+.timer-big { font-size: clamp(3rem, 18vw, 5rem); font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
+.timer-big.low { color: var(--accent); }
+.play .top .timer-big { font-size: inherit; }
